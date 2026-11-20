@@ -940,18 +940,72 @@
       c.drawImage(video, fx, fy, fw, fh, dx, dy, dw, dh);
     }
 
+    const blurCanvas2 = document.createElement('canvas');
+    const blurCtx2 = blurCanvas2.getContext('2d');
+
     function drawBlurredBg(c, video, outW, outH) {
       const vw = video.videoWidth, vh = video.videoHeight;
       if (!vw || !vh) return;
-      const sw = evenInt(outW / 5, 64), sh = evenInt(outH / 5, 64), pad = Math.ceil(state.videoBlur * 1.4);
-      if (blurCanvas.width !== sw) blurCanvas.width = sw;
-      if (blurCanvas.height !== sh) blurCanvas.height = sh;
-      const sc = Math.max((sw + pad * 2) / vw, (sh + pad * 2) / vh);
+      const b = Math.max(0, state.videoBlur);
+      if (b <= 0) {
+        const sc0 = Math.max(outW / vw, outH / vh);
+        const dw0 = vw * sc0, dh0 = vh * sc0;
+        c.drawImage(video, (outW - dw0) / 2, (outH - dh0) / 2, dw0, dh0);
+        return;
+      }
+      const ratio = outH / outW;
+      const w1 = Math.max(18, Math.round(130 - b * 4));
+      const h1 = Math.max(18, Math.round(w1 * ratio));
+      const w2 = Math.max(10, Math.round(w1 * 0.55));
+      const h2 = Math.max(10, Math.round(h1 * 0.55));
+
+      if (blurCanvas.width !== w1 || blurCanvas.height !== h1) {
+        blurCanvas.width = w1;
+        blurCanvas.height = h1;
+      }
+      if (blurCanvas2.width !== w2 || blurCanvas2.height !== h2) {
+        blurCanvas2.width = w2;
+        blurCanvas2.height = h2;
+      }
+
+      blurCtx.imageSmoothingEnabled = true;
+      blurCtx.imageSmoothingQuality = 'high';
+      blurCtx2.imageSmoothingEnabled = true;
+      blurCtx2.imageSmoothingQuality = 'high';
+
+      const sc = Math.max(w1 / vw, h1 / vh) * 1.12;
       const dw = vw * sc, dh = vh * sc;
-      blurCtx.save(); blurCtx.filter = `blur(${state.videoBlur}px)`;
-      blurCtx.drawImage(video, (sw - dw) / 2, (sh - dh) / 2, dw, dh);
-      blurCtx.restore();
-      c.drawImage(blurCanvas, 0, 0, sw, sh, 0, 0, outW, outH);
+      blurCtx.globalAlpha = 1;
+      blurCtx.drawImage(video, (w1 - dw) / 2, (h1 - dh) / 2, dw, dh);
+
+      const taps = [
+        [-1, -1, 1.0],
+        [1, -1, 0.5],
+        [-1, 1, 1 / 3],
+        [1, 1, 0.25]
+      ];
+      const s1 = Math.max(1, b * 0.09);
+      for (const [ox, oy, alpha] of taps) {
+        blurCtx2.globalAlpha = alpha;
+        blurCtx2.drawImage(blurCanvas, ox * s1 - s1, oy * s1 - s1, w2 + s1 * 2, h2 + s1 * 2);
+      }
+      const s2 = Math.max(1.2, b * 0.14);
+      for (const [ox, oy, alpha] of taps) {
+        blurCtx.globalAlpha = alpha;
+        blurCtx.drawImage(blurCanvas2, ox * s2 - s2, oy * s2 - s2, w1 + s2 * 2, h1 + s2 * 2);
+      }
+      blurCtx.globalAlpha = 1;
+      blurCtx2.globalAlpha = 1;
+
+      c.save();
+      c.imageSmoothingEnabled = true;
+      c.imageSmoothingQuality = 'high';
+      const padX = Math.round(outW * 0.04);
+      const padY = Math.round(outH * 0.04);
+      c.drawImage(blurCanvas, -padX, -padY, outW + padX * 2, outH + padY * 2);
+      c.fillStyle = 'rgba(8, 1, 17, 0.18)';
+      c.fillRect(0, 0, outW, outH);
+      c.restore();
     }
 
     function computeVideoDims() {
