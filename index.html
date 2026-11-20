@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ViceCityIV">
+  <meta name="theme-color" content="#07020e">
+  <title>ViceCityIV Mobil Stüdyo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { background:#07020e; color:#fff; font-family:'Montserrat',sans-serif; margin:0; padding-bottom:48px; overflow-x:hidden; }
+    .font-preload { position:absolute; left:-9999px; visibility:hidden; }
+    .stage { position:relative; width:100%; max-width:440px; margin:0 auto; border-radius:16px; overflow:hidden; background:#0d031a; box-shadow:0 20px 60px -10px rgba(195,0,255,.45),0 0 0 1px rgba(255,255,255,.14); }
+    #studio-canvas { width:100%; height:auto; display:block; }
+    .video-stage { position:relative; width:100%; background:#080111; border-radius:14px; overflow:hidden; border:1px solid rgba(168,85,247,.45); user-select:none; }
+    #src-video { width:100%; height:auto; max-height:360px; display:block; object-fit:contain; background:#05010a; }
+    #crop-overlay { position:absolute; inset:0; pointer-events:none; }
+    .crop-box { position:absolute; pointer-events:auto; cursor:move; touch-action:none; box-sizing:border-box; }
+    .crop-fc { border:2.5px solid #ff2a85; background:rgba(255,42,133,.18); box-shadow:0 0 16px rgba(255,42,133,.5); z-index:20; }
+    .crop-gp { border:2.5px solid #00e5ff; background:rgba(0,229,255,.12); box-shadow:0 0 14px rgba(0,229,255,.35); z-index:10; }
+    .crop-lbl { position:absolute; top:3px; left:5px; font-size:9px; font-weight:900; padding:2px 5px; border-radius:5px; pointer-events:none; }
+    .lbl-fc { background:#ff2a85; color:#fff; }
+    .lbl-gp { background:#00e5ff; color:#090214; }
+    .r-handle { position:absolute; width:18px; height:18px; border-radius:5px; border:2px solid #fff; touch-action:none; }
+    .rh-fc { background:#ff2a85; }
+    .rh-gp { background:#00e5ff; }
+    .rh-nw { top:-9px; left:-9px; cursor:nwse-resize; }
+    .rh-ne { top:-9px; right:-9px; cursor:nesw-resize; }
+    .rh-sw { bottom:-9px; left:-9px; cursor:nesw-resize; }
+    .rh-se { bottom:-9px; right:-9px; cursor:nwse-resize; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+
+  <div class="font-preload">
+    <span style="font-family:'Outfit';font-weight:900;">GTA 6 21.11.2026 GÜNÜN HABERLERİ</span>
+    <span style="font-family:'Montserrat';font-weight:500;">@vice.cityiv</span>
+    <span style="font-family:'Montserrat';font-weight:900;">grand theft auto</span>
+  </div>
+
+  <div class="w-full max-w-6xl px-3 sm:px-5 pt-3 flex flex-col gap-3">
+    <div class="bg-[#150529]/95 border border-purple-500/40 rounded-2xl p-3 shadow-2xl flex flex-col gap-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-pink-400"></span>
+          <span class="text-xs sm:text-sm font-black tracking-wide text-white">VICE.CITYIV • MOBİL STÜDYO</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" id="btn-main-export" onclick="window.handleMainExport()" class="bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 active:scale-95 text-white text-xs font-black px-3.5 py-2 rounded-xl border border-pink-400/50 shadow-lg cursor-pointer">KAYDET / PAYLAŞ</button>
+          <button type="button" id="btn-png-export" onclick="window.exportImage('png', false)" class="bg-purple-900 active:scale-95 text-purple-100 text-xs font-extrabold px-3 py-2 rounded-xl border border-purple-400/40 cursor-pointer">PNG</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-[11px] font-black">
+        <button type="button" id="tab-tek" onclick="window.setMode('tek')" class="bg-gradient-to-r from-pink-600 to-purple-600 text-white py-2.5 px-2 rounded-xl border border-pink-300/60 cursor-pointer">1. Tek Cümle</button>
+        <button type="button" id="tab-madde" onclick="window.setMode('madde')" class="bg-[#0b0217] text-purple-200 py-2.5 px-2 rounded-xl border border-purple-500/40 cursor-pointer">2. Maddeli</button>
+        <button type="button" id="tab-kapak" onclick="window.setMode('kapak')" class="bg-[#0b0217] text-purple-200 py-2.5 px-2 rounded-xl border border-purple-500/40 cursor-pointer">3. Haber Kapağı</button>
+        <button type="button" id="tab-foto" onclick="window.setMode('foto')" class="bg-[#0b0217] text-purple-200 py-2.5 px-2 rounded-xl border border-purple-500/40 cursor-pointer">4. Foto Footer</button>
+        <button type="button" id="tab-facecam" onclick="window.setMode('facecam')" class="col-span-2 sm:col-span-1 bg-[#0b0217] text-purple-200 py-2.5 px-2 rounded-xl border border-purple-500/40 cursor-pointer">5. Facecam Video</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div class="lg:col-span-5 lg:order-2 flex flex-col items-center gap-2 lg:sticky lg:top-3">
+        <div class="stage" id="drop-zone">
+          <canvas id="studio-canvas" width="2160" height="2700"></canvas>
+        </div>
+        <span id="res-info" class="text-[11px] font-mono text-cyan-300">2160×2700 • 4:5</span>
+      </div>
+
+      <div class="lg:col-span-7 lg:order-1 flex flex-col gap-3">
+        <div class="bg-[#150529]/95 border border-purple-500/40 rounded-2xl p-3.5 shadow-xl flex flex-col gap-3 text-xs">
+
+          <div id="panel-tek" class="flex flex-col gap-2.5">
+            <div>
+              <label class="text-[10px] text-amber-300 font-black uppercase">ANA CÜMLE (*kelime* altın sarısı olur):</label>
+              <textarea id="inp-tek-sentence" rows="3" class="w-full mt-1 bg-[#090214] border border-amber-500/40 rounded-xl p-2.5 text-sm text-white font-bold leading-relaxed">GTA 6'da *51. Bölge'ye* giden bir oyuncu, bulduğu uzaylıyı serbest bıraktı.</textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl p-2.5">
+              <div>
+                <label class="text-[10px] text-cyan-300 font-bold">Yazı (<span id="val-tek-size">54</span>px)</label>
+                <input type="range" id="sld-tek-size" min="28" max="68" value="54" class="w-full accent-cyan-400">
+              </div>
+              <div>
+                <label class="text-[10px] text-pink-300 font-bold">Konum (<span id="val-tek-y">100</span>%)</label>
+                <input type="range" id="sld-tek-y" min="15" max="100" value="100" class="w-full accent-pink-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Hizalama</label>
+                <select id="sel-tek-align" class="w-full bg-[#150529] border border-purple-500/40 rounded-lg px-2 py-1 text-white font-bold">
+                  <option value="center" selected>Ortalı</option>
+                  <option value="left">Sola Yaslı</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Karartma (<span id="val-tek-vig">90</span>%)</label>
+                <input type="range" id="sld-tek-vig" min="25" max="100" value="90" class="w-full accent-purple-400">
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-madde" class="hidden flex flex-col gap-2.5">
+            <div>
+              <label class="text-[10px] text-amber-300 font-black uppercase">HABER BAŞLIĞI (*kelime* vurgulu):</label>
+              <input type="text" id="inp-madde-head" value="GTA 6'da gizli *FPS modu* keşfedildi" class="w-full mt-1 bg-[#090214] border border-amber-500/40 rounded-xl px-2.5 py-2 text-sm text-white font-extrabold">
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[10px] text-cyan-300 font-black uppercase">MADDELER (HER SATIR 1 MADDE):</label>
+                <button type="button" onclick="window.autoNumberLines()" class="bg-purple-900 text-cyan-200 text-[10px] font-bold px-2 py-1 rounded-lg border border-purple-400/40 cursor-pointer">1 - 2 - Numarala</button>
+              </div>
+              <textarea id="inp-madde-lines" rows="4" class="w-full bg-[#090214] border border-cyan-500/40 rounded-xl p-2.5 text-xs text-white font-semibold leading-relaxed">1 - Araç içindeyken telefonu açın
+2 - Telefonu kapatma tuşu ile kamera/harita tuşuna hızlıca basın</textarea>
+            </div>
+            <div class="grid grid-cols-3 gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl p-2.5">
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Başlık (<span id="val-m-head">48</span>)</label>
+                <input type="range" id="sld-m-head" min="32" max="62" value="48" class="w-full accent-amber-400">
+              </div>
+              <div>
+                <label class="text-[10px] text-cyan-300 font-bold">Madde (<span id="val-m-body">31</span>)</label>
+                <input type="range" id="sld-m-body" min="20" max="42" value="31" class="w-full accent-cyan-400">
+              </div>
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Karartma (<span id="val-m-vig">92</span>%)</label>
+                <input type="range" id="sld-m-vig" min="25" max="100" value="92" class="w-full accent-purple-400">
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-kapak" class="hidden flex flex-col gap-2.5">
+            <div class="bg-amber-950/25 border border-amber-500/40 rounded-xl p-2.5 flex flex-col gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[10px] text-amber-300 font-black">DEV TARİH / BÜYÜK VURGU:</label>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="window.setKapakDate(0)" class="bg-amber-600/90 text-white text-[10px] font-extrabold px-2 py-0.5 rounded cursor-pointer">Bugün</button>
+                  <button type="button" onclick="window.setKapakDate(-1)" class="bg-purple-900 text-purple-100 text-[10px] font-extrabold px-2 py-0.5 rounded cursor-pointer">Dün</button>
+                </div>
+              </div>
+              <input type="text" id="inp-k-date" value="" class="w-full bg-[#090214] border border-amber-500/50 rounded-lg px-2.5 py-1.5 text-base text-amber-300 font-black tracking-wide">
+            </div>
+
+            <div class="bg-pink-950/25 border border-pink-500/40 rounded-xl p-2.5 flex flex-col gap-1">
+              <label class="text-[10px] text-pink-300 font-black">ANA KAPAK BAŞLIĞI (*kelime* altın sarısı):</label>
+              <textarea id="inp-k-head" rows="2" class="w-full bg-[#090214] border border-pink-500/40 rounded-lg p-2 text-sm text-white font-black leading-relaxed">GÜNÜN *GTA 6* HABERLERİ</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Alt Açıklama (İsteğe Bağlı):</label>
+                <input type="text" id="inp-k-sub" value="Öne Çıkan Gelişmeler, Sızıntılar & Yayıncı Gündemi" class="w-full mt-0.5 bg-[#090214] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-white font-semibold">
+              </div>
+              <div>
+                <label class="text-[10px] text-cyan-300 font-bold">Kaydırma Rozeti (Boşsa Gizlenir):</label>
+                <input type="text" id="inp-k-swipe" value="HABERLER İÇİN KAYDIR  ➔" class="w-full mt-0.5 bg-[#090214] border border-cyan-500/40 rounded-lg px-2.5 py-1.5 text-cyan-300 font-extrabold">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl p-2.5">
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Tarih (<span id="val-k-date">152</span>px)</label>
+                <input type="range" id="sld-k-date" min="72" max="152" value="152" class="w-full accent-amber-400">
+              </div>
+              <div>
+                <label class="text-[10px] text-cyan-300 font-bold">Başlık (<span id="val-k-head">96</span>px)</label>
+                <input type="range" id="sld-k-head" min="44" max="96" value="96" class="w-full accent-cyan-400">
+              </div>
+              <div>
+                <label class="text-[10px] text-pink-300 font-bold">Kutu Dikey Konumu</label>
+                <input type="range" id="sld-k-boxy" min="10" max="90" value="50" class="w-full accent-pink-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Kutu Opaklığı</label>
+                <input type="range" id="sld-k-boxop" min="50" max="98" value="98" class="w-full accent-purple-400">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">1. Üst Beyaz Başlık:</label>
+                <input type="text" id="inp-k-t1" value="GTA 6" class="w-full mt-0.5 bg-[#090214] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-white font-extrabold">
+              </div>
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">2. Büyük Renkli Başlık:</label>
+                <input type="text" id="inp-k-t2" value="HABER BÜLTENİ" class="w-full mt-0.5 bg-[#090214] border border-pink-500/40 rounded-lg px-2.5 py-1.5 text-amber-300 font-extrabold">
+              </div>
+              <div>
+                <label class="text-[10px] text-pink-300 font-bold">Sağ Üst Pembe Rozet:</label>
+                <input type="text" id="inp-k-pill" value="VICE CITY • GÜNDEM" class="w-full mt-0.5 bg-[#090214] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-white font-bold">
+              </div>
+              <div>
+                <label class="text-[10px] text-cyan-300 font-bold">Kutu İçi Sarı Etiket:</label>
+                <input type="text" id="inp-k-tag" value="GÜNLÜK ÖZET" class="w-full mt-0.5 bg-[#090214] border border-cyan-500/40 rounded-lg px-2.5 py-1.5 text-cyan-300 font-bold">
+              </div>
+            </div>
+          </div>
+
+          <div id="panel-foto" class="hidden flex flex-col gap-2.5">
+            <label class="cursor-pointer bg-gradient-to-r from-amber-600 to-orange-600 text-white font-black py-3 px-4 rounded-xl text-center border border-amber-300/40">
+              <span>Galeriden Fotoğraf Seç</span>
+              <input type="file" id="inp-photo-file" accept="image/*" class="hidden">
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-[11px] font-black">
+              <button type="button" id="btn-place-append" onclick="window.setFooterPlace('append')" class="bg-gradient-to-r from-cyan-500 to-emerald-500 text-black py-2 px-2 rounded-xl border border-cyan-200 cursor-pointer">Altına Ekle (Kırpmasız)</button>
+              <button type="button" id="btn-place-overlay" onclick="window.setFooterPlace('overlay')" class="bg-[#0b0217] text-purple-200 py-2 px-2 rounded-xl border border-purple-500/40 cursor-pointer">Üstüne Bindir</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl p-2.5">
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Footer Boyu (<span id="val-ft-h">112</span>px)</label>
+                <input type="range" id="sld-ft-h" min="84" max="156" step="2" value="112" class="w-full accent-amber-400">
+              </div>
+              <div id="wrap-ft-pad" class="hidden">
+                <label class="text-[10px] text-cyan-300 font-bold">Yukarı Kaydır (<span id="val-ft-pad">0</span>px)</label>
+                <input type="range" id="sld-ft-pad" min="0" max="240" step="2" value="0" class="w-full accent-cyan-400">
+              </div>
+            </div>
+            <button type="button" onclick="window.exportFooterPNG()" class="bg-emerald-800/90 text-emerald-100 font-extrabold py-2 px-3 rounded-xl border border-emerald-400/40 cursor-pointer">Sadece Footer PNG İndir</button>
+          </div>
+
+          <div id="panel-facecam" class="hidden flex flex-col gap-2.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <label class="flex-1 cursor-pointer bg-gradient-to-r from-amber-600 to-orange-600 text-white font-black py-2.5 px-3 rounded-xl text-center border border-amber-300/40">
+                <span>Galeriden Video Seç (.mp4 / .mov)</span>
+                <input type="file" id="inp-video-file" accept="video/*" class="hidden">
+              </label>
+              <select id="sel-v-format" class="bg-[#0b0217] border border-purple-500/40 rounded-xl px-2.5 py-2.5 text-cyan-300 font-extrabold">
+                <option value="9:16" selected>9:16 Reels/Shorts</option>
+                <option value="4:5">4:5 Instagram</option>
+              </select>
+              <select id="sel-v-qual" class="bg-[#0b0217] border border-purple-500/40 rounded-xl px-2.5 py-2.5 text-amber-300 font-extrabold">
+                <option value="720" selected>720p Hızlı (Mobil)</option>
+                <option value="1080">1080p Full HD</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5 text-[10px] sm:text-[11px] font-black">
+              <button type="button" id="vmode-fit" onclick="window.setVideoSubMode('fit_blur')" class="bg-gradient-to-r from-cyan-500 to-emerald-500 text-black py-2 px-1.5 rounded-xl border border-cyan-200 cursor-pointer">16:9 + Bulanık</button>
+              <button type="button" id="vmode-crop" onclick="window.setVideoSubMode('crop_fill')" class="bg-[#0b0217] text-purple-200 py-2 px-1.5 rounded-xl border border-purple-500/40 cursor-pointer">Serbest Kırpma</button>
+              <button type="button" id="vmode-ft" onclick="window.setVideoSubMode('footer_only')" class="bg-[#0b0217] text-purple-200 py-2 px-1.5 rounded-xl border border-purple-500/40 cursor-pointer">Sadece Footer</button>
+            </div>
+
+            <div id="fc-presets-row" class="flex flex-wrap items-center gap-1.5 text-[10px] font-extrabold">
+              <span class="text-pink-300">Facecam:</span>
+              <button type="button" onclick="window.presetFacecam('bl')" class="bg-pink-950/90 text-pink-200 px-2 py-1 rounded-lg border border-pink-500/40 cursor-pointer">Sol Alt</button>
+              <button type="button" onclick="window.presetFacecam('br')" class="bg-pink-950/90 text-pink-200 px-2 py-1 rounded-lg border border-pink-500/40 cursor-pointer">Sağ Alt</button>
+              <button type="button" onclick="window.presetFacecam('tl')" class="bg-pink-950/90 text-pink-200 px-2 py-1 rounded-lg border border-pink-500/40 cursor-pointer">Sol Üst</button>
+              <button type="button" onclick="window.presetFacecam('tr')" class="bg-pink-950/90 text-pink-200 px-2 py-1 rounded-lg border border-pink-500/40 cursor-pointer">Sağ Üst</button>
+              <button type="button" onclick="window.presetFacecam('mr')" class="bg-pink-950/90 text-pink-200 px-2 py-1 rounded-lg border border-pink-500/40 cursor-pointer">Sağ Orta</button>
+            </div>
+
+            <div class="video-stage" id="video-stage">
+              <div id="video-empty-hint" class="h-[170px] flex flex-col items-center justify-center gap-1.5 text-center p-4 text-purple-300">
+                <span class="text-lg font-black text-pink-400">PC'SİZ FACECAM STÜDYOSU</span>
+                <p class="text-[11px] text-purple-200">Videoyu seçin, pembe Facecam kutusunu parmağınızla sürükleyip boyutlandırın.</p>
+              </div>
+              <video id="src-video" class="hidden" playsinline webkit-playsinline loop></video>
+              <div id="crop-overlay" class="hidden">
+                <div id="box-gp" class="crop-box crop-gp hidden">
+                  <span class="crop-lbl lbl-gp">OYUN</span>
+                  <div class="r-handle rh-gp rh-nw" data-box="gp" data-dir="nw"></div>
+                  <div class="r-handle rh-gp rh-ne" data-box="gp" data-dir="ne"></div>
+                  <div class="r-handle rh-gp rh-sw" data-box="gp" data-dir="sw"></div>
+                  <div class="r-handle rh-gp rh-se" data-box="gp" data-dir="se"></div>
+                </div>
+                <div id="box-fc" class="crop-box crop-fc">
+                  <span class="crop-lbl lbl-fc">FACECAM</span>
+                  <div class="r-handle rh-fc rh-nw" data-box="fc" data-dir="nw"></div>
+                  <div class="r-handle rh-fc rh-ne" data-box="fc" data-dir="ne"></div>
+                  <div class="r-handle rh-fc rh-sw" data-box="fc" data-dir="sw"></div>
+                  <div class="r-handle rh-fc rh-se" data-box="fc" data-dir="se"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="v-controls" class="hidden flex items-center gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl px-2.5 py-2">
+              <button type="button" id="btn-v-play" class="bg-pink-600 text-white font-black px-2.5 py-1 rounded-lg cursor-pointer">Oynat</button>
+              <button type="button" id="btn-v-mute" class="bg-purple-900 text-purple-100 font-bold px-2 py-1 rounded-lg cursor-pointer">Ses</button>
+              <input type="range" id="sld-v-seek" min="0" max="1000" value="0" class="flex-1 accent-pink-500">
+              <span id="lbl-v-time" class="text-[10px] font-mono text-purple-200">0:00</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl p-2.5">
+              <div id="wrap-v-ratio">
+                <label class="text-[10px] text-pink-300 font-bold">Facecam (<span id="val-v-ratio">34</span>%)</label>
+                <input type="range" id="sld-v-ratio" min="20" max="50" value="34" class="w-full accent-pink-500">
+              </div>
+              <div id="wrap-v-blur">
+                <label class="text-[10px] text-purple-300 font-bold">Bulanıklık (<span id="val-v-blur">14</span>)</label>
+                <input type="range" id="sld-v-blur" min="4" max="28" value="14" class="w-full accent-purple-400">
+              </div>
+              <div id="wrap-v-div">
+                <div class="flex items-center justify-between">
+                  <label class="text-[10px] text-fuchsia-300 font-bold">Mor Çizgi (<span id="val-v-div">5</span>)</label>
+                  <input type="checkbox" id="chk-v-div" checked class="accent-fuchsia-500 w-3.5 h-3.5">
+                </div>
+                <input type="range" id="sld-v-div" min="2" max="14" value="5" class="w-full accent-fuchsia-500">
+              </div>
+              <div>
+                <div class="flex items-center justify-between">
+                  <label class="text-[10px] text-amber-300 font-bold">Footer (<span id="val-v-ft">112</span>)</label>
+                  <input type="checkbox" id="chk-v-ft" checked class="accent-emerald-400 w-3.5 h-3.5">
+                </div>
+                <input type="range" id="sld-v-ft" min="84" max="156" step="2" value="112" class="w-full accent-amber-400">
+              </div>
+            </div>
+
+            <div id="rec-progress-box" class="hidden flex flex-col gap-1.5 bg-pink-950/50 border border-pink-500/50 rounded-xl p-2.5">
+              <div class="flex items-center justify-between text-[11px] font-bold text-pink-200">
+                <span id="rec-status-text">Video kaydediliyor...</span>
+                <button type="button" onclick="window.cancelVideoExport()" class="bg-rose-700 text-white px-2.5 py-0.5 rounded-lg text-[10px] font-black cursor-pointer">İptal</button>
+              </div>
+              <div class="w-full h-2 rounded-full bg-purple-950 overflow-hidden">
+                <div id="rec-progress-bar" class="h-full bg-gradient-to-r from-pink-500 to-cyan-400 w-0"></div>
+              </div>
+            </div>
+            <p id="v-error-msg" class="hidden text-[11px] text-rose-300 font-bold"></p>
+          </div>
+
+          <div id="panel-bg-controls" class="flex flex-col gap-2 pt-2 border-t border-purple-500/20">
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer bg-amber-700/80 text-white font-bold py-2 px-3 rounded-xl text-center border border-amber-400/40">
+                <span>Arka Plan Seç</span>
+                <input type="file" id="inp-bg-custom" accept="image/*" class="hidden">
+              </label>
+              <button type="button" onclick="window.resetBgToDefault()" class="bg-[#0b0217] text-amber-200 font-bold py-2 px-3 rounded-xl border border-amber-500/30 cursor-pointer">Varsayılana Dön</button>
+            </div>
+            <div class="grid grid-cols-4 gap-2 bg-[#0b0217] border border-purple-500/30 rounded-xl p-2.5">
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Opaklık</label>
+                <input type="range" id="sld-bg-op" min="20" max="100" value="84" class="w-full accent-amber-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Zoom</label>
+                <input type="range" id="sld-bg-zoom" min="100" max="200" value="100" class="w-full accent-amber-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Dikey</label>
+                <input type="range" id="sld-bg-y" min="0" max="100" value="50" class="w-full accent-amber-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold">Yatay</label>
+                <input type="range" id="sld-bg-x" min="0" max="100" value="50" class="w-full accent-amber-500">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <details class="bg-[#150529]/95 border border-purple-500/40 rounded-2xl p-3.5 shadow-xl text-xs">
+          <summary class="font-black text-pink-300 cursor-pointer select-none">KALICI LOGOLAR &amp; FOOTER METİNLERİ (1 KEZ AYARLA)</summary>
+          <div class="mt-3 flex flex-col gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <label class="cursor-pointer bg-amber-950/70 text-amber-200 font-bold p-2 rounded-xl border border-amber-500/40 text-center">
+                <span>Varsayılan Arka Plan</span>
+                <div id="badge-def-bg" class="text-[10px] text-amber-300/80 mt-0.5">Kayıtlı değil</div>
+                <input type="file" id="inp-def-bg" accept="image/*" class="hidden">
+              </label>
+              <label class="cursor-pointer bg-pink-950/70 text-pink-200 font-bold p-2 rounded-xl border border-pink-500/40 text-center">
+                <span>Sağ Üst Logo (GTA 6)</span>
+                <div id="badge-top-logo" class="text-[10px] text-pink-300/80 mt-0.5">Vektör</div>
+                <input type="file" id="inp-top-logo" accept="image/*" class="hidden">
+              </label>
+              <label class="cursor-pointer bg-purple-950/70 text-purple-200 font-bold p-2 rounded-xl border border-purple-500/40 text-center">
+                <span>Alt Profil Logosu</span>
+                <div id="badge-avatar" class="text-[10px] text-purple-300/80 mt-0.5">Varsayılan</div>
+                <input type="file" id="inp-avatar" accept="image/*" class="hidden">
+              </label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Footer Satır 1:</label>
+                <input type="text" id="inp-ft-note" value="GTA 6 haberleri, klipler ve editler • @vice.cityiv" class="w-full bg-[#090214] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="text-[10px] text-purple-300 font-bold">Footer Satır 2:</label>
+                <input type="text" id="inp-ft-sub" value="Daha fazlası için takip etmeyi ve beğenmeyi unutma!" class="w-full bg-[#090214] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-purple-300">
+              </div>
+              <div>
+                <label class="text-[10px] text-pink-300 font-bold">Kullanıcı Adı:</label>
+                <input type="text" id="inp-username" value="vice.cityiv" class="w-full bg-[#090214] border border-pink-500/40 rounded-lg px-2.5 py-1.5 text-white font-bold">
+              </div>
+              <div>
+                <label class="text-[10px] text-pink-300 font-bold">Rozet Alt Yazısı:</label>
+                <input type="text" id="inp-badge-sub" value="VICE CITY • KLİPLER &amp; EDİTLER" class="w-full bg-[#090214] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-pink-300 font-bold">
+              </div>
+            </div>
+            <button type="button" onclick="window.clearSavedAssets()" class="bg-rose-950/70 text-rose-200 font-bold py-1.5 px-3 rounded-lg border border-rose-500/40 cursor-pointer">Kayıtlı Logoları Temizle</button>
+          </div>
+        </details>
+
+        <div class="bg-[#150529]/95 border border-purple-500/40 rounded-2xl p-3.5 shadow-xl flex flex-col gap-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="font-black text-pink-300">HAZIR INSTAGRAM AÇIKLAMASI</span>
+            <button type="button" id="btn-copy-cap" onclick="window.copyCaption()" class="bg-pink-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-lg cursor-pointer">Kopyala</button>
+          </div>
+          <textarea id="txt-caption" rows="3" readonly class="w-full bg-[#090214] border border-purple-500/30 rounded-xl p-2 text-[11px] text-purple-100 leading-relaxed focus:outline-none"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('studio-canvas');
+    const videoEl = document.getElementById('src-video');
+    const overlayEl = document.getElementById('crop-overlay');
+    const fcBoxEl = document.getElementById('box-fc');
+    const gpBoxEl = document.getElementById('box-gp');
+    const blurCanvas = document.createElement('canvas');
+    const blurCtx = blurCanvas.getContext('2d');
+
+    const KEYS = {
+      defBg: 'vc_mob_def_bg_v1',
+      topLogo: 'vc_mob_top_logo_v1',
+      avatar: 'vc_mob_avatar_v1',
+      prefs: 'vc_mob_prefs_v1'
+    };
+
+    function formatTurkishDate(offsetDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+    }
+
+    const state = {
+      mode: 'tek',
+      username: 'vice.cityiv',
+      badgeSub: 'VICE CITY • KLİPLER & EDİTLER',
+      footerNote: 'GTA 6 haberleri, klipler ve editler • @vice.cityiv',
+      footerSub: 'Daha fazlası için takip etmeyi ve beğenmeyi unutma!',
+      tekSentence: "GTA 6'da *51. Bölge'ye* giden bir oyuncu, bulduğu uzaylıyı serbest bıraktı.",
+      tekSize: 54,
+      tekPosY: 1.0,
+      tekAlign: 'center',
+      tekVignette: 0.90,
+      maddeHead: "GTA 6'da gizli *FPS modu* keşfedildi",
+      maddeLines: [
+        '1 - Araç içindeyken telefonu açın',
+        '2 - Telefonu kapatma tuşu ile kamera/harita tuşuna hızlıca basın'
+      ],
+      maddeHeadSize: 48,
+      maddeBodySize: 31,
+      maddeVignette: 0.92,
+      kapakT1: 'GTA 6',
+      kapakT2: 'HABER BÜLTENİ',
+      kapakPill: 'VICE CITY • GÜNDEM',
+      kapakBoxTag: 'GÜNLÜK ÖZET',
+      kapakDate: formatTurkishDate(0),
+      kapakHead: 'GÜNÜN *GTA 6* HABERLERİ',
+      kapakSub: 'Öne Çıkan Gelişmeler, Sızıntılar & Yayıncı Gündemi',
+      kapakSwipe: 'HABERLER İÇİN KAYDIR  ➔',
+      kapakDateSize: 152,
+      kapakHeadSize: 96,
+      kapakBoxPosY: 0.50,
+      kapakBoxOpacity: 0.98,
+      footerPlace: 'append',
+      footerH: 112,
+      footerPad: 0,
+      bgOpacity: 0.84,
+      bgZoom: 1.0,
+      bgPosX: 0.5,
+      bgPosY: 0.5,
+      defaultBgImg: null,
+      customBgImg: null,
+      photoImg: null,
+      topLogoImg: null,
+      avatarImg: null,
+      videoUrl: null,
+      videoLoaded: false,
+      videoSubMode: 'fit_blur',
+      videoFormat: '9:16',
+      videoQuality: 720,
+      videoFcRatio: 0.34,
+      videoBlur: 14,
+      videoDivOn: true,
+      videoDivH: 5,
+      videoFtOn: true,
+      videoFtH: 112,
+      fc: { x: 0.02, y: 0.16, w: 0.26, h: 0.28 },
+      gp: { x: 0.20, y: 0.00, w: 0.60, h: 1.00 }
+    };
+
+    let dragState = null;
+    let isRecording = false;
+    let activeRecorder = null;
+    let recordCancelled = false;
+    let audioCtx = null;
+    let mediaSrcNode = null;
+    let audioDestNode = null;
+    let monitorGainNode = null;
+    let userMuted = false;
+
+    function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
+    function isReady(img) { return Boolean(img && img.complete && img.naturalWidth > 0); }
+    function evenInt(n, minVal = 2) { let v = Math.max(minVal, Math.round(n)); return v % 2 === 0 ? v : v - 1; }
+    function fmtTime(sec) {
+      if (!isFinite(sec) || sec < 0) return '0:00';
+      const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function drawRR(c, x, y, w, h, r) {
+      c.beginPath();
+      c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+      c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+      c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+      c.closePath();
+    }
+
+    function drawPalm(c, bx, by, tx, ty, sc, col, a) {
+      c.save(); c.globalAlpha = a; c.strokeStyle = col; c.lineCap = 'round';
+      c.lineWidth = 10 * sc; c.beginPath(); c.moveTo(bx, by);
+      c.quadraticCurveTo((bx + tx) / 2 + 18 * sc, (by + ty) / 2, tx, ty); c.stroke();
+      [[-45,-15,-85,20],[-35,-45,-75,-25],[-10,-55,-25,-70],[35,-45,75,-30],[50,-20,88,18],[25,5,55,42]].forEach(f => {
+        c.lineWidth = 7 * sc; c.beginPath(); c.moveTo(tx, ty);
+        c.quadraticCurveTo(tx + f[0] * sc, ty + f[1] * sc, tx + f[2] * sc, ty + f[3] * sc); c.stroke();
+      });
+      c.restore();
+    }
+
+    function drawTopLogo(c, rightX, topY, bw, bh) {
+      if (isReady(state.topLogoImg)) {
+        c.save();
+        const img = state.topLogoImg;
+        const r = Math.min((bw + 16) / img.naturalWidth, (bh + 10) / img.naturalHeight);
+        const dw = img.naturalWidth * r, dh = img.naturalHeight * r;
+        c.drawImage(img, rightX - dw, topY + (bh - dh) / 2, dw, dh);
+        c.restore();
+        return;
+      }
+      c.save();
+      c.translate(rightX - bw, topY);
+      c.scale(bw / 300, bh / 210);
+      const vP = new Path2D();
+      vP.moveTo(8,10); vP.lineTo(86,10); vP.lineTo(122,138); vP.lineTo(156,10);
+      vP.lineTo(222,10); vP.lineTo(154,204); vP.lineTo(78,204); vP.closePath();
+      const iP = new Path2D(); iP.rect(228,10,64,194);
+      const g = c.createLinearGradient(0,10,280,204);
+      g.addColorStop(0,'#6a00f4'); g.addColorStop(.35,'#d10089'); g.addColorStop(.72,'#ff2a6d'); g.addColorStop(1,'#ffaa00');
+      [vP, iP].forEach(p => { c.save(); c.clip(p); c.fillStyle = g; c.fillRect(0,0,305,215); c.restore(); });
+      c.lineWidth = 6.5; c.strokeStyle = '#ff4d94'; c.stroke(vP); c.stroke(iP);
+      c.translate(166,126); c.scale(1.15,1.15); c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '900 54px "Montserrat","Outfit",sans-serif'; c.lineJoin = 'round';
+      [['grand',-4,-38],['theft',6,2],['auto',0,42]].forEach(l => {
+        c.strokeStyle = '#090114'; c.lineWidth = 16; c.strokeText(l[0],l[1],l[2]);
+        c.fillStyle = '#fff'; c.fillText(l[0],l[1],l[2]);
+      });
+      c.restore();
+    }
+
+    function drawLeftNeonRail(c, H, topOffset) {
+      const lineX = 56, lineTop = topOffset || 145, lineBot = H - 142, midY = (lineTop + lineBot) / 2;
+      c.save();
+      const grad = c.createLinearGradient(lineX, lineTop, lineX, lineBot);
+      grad.addColorStop(0.0, '#ffc400'); grad.addColorStop(0.32, '#ff1e8a');
+      grad.addColorStop(0.68, '#a855f7'); grad.addColorStop(1.0, '#00e5ff');
+      c.lineCap = 'round'; c.strokeStyle = grad;
+      c.shadowColor = 'rgba(217, 70, 239, 0.92)'; c.shadowBlur = 24; c.lineWidth = 5;
+      c.beginPath(); c.moveTo(lineX, lineTop); c.lineTo(lineX, lineBot); c.stroke();
+      c.shadowColor = 'rgba(255, 30, 138, 0.75)'; c.shadowBlur = 10; c.lineWidth = 4;
+      c.beginPath(); c.moveTo(lineX, lineTop); c.lineTo(lineX, lineBot); c.stroke();
+      c.shadowBlur = 0; c.strokeStyle = 'rgba(255, 255, 255, 0.52)'; c.lineWidth = 1.4;
+      c.beginPath(); c.moveTo(lineX, lineTop + 2); c.lineTo(lineX, lineBot - 2); c.stroke();
+
+      const handleText = '@' + state.username;
+      const tracking = 4.5;
+      c.translate(29, midY); c.rotate(-Math.PI / 2);
+      c.font = '500 17px "Montserrat",sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'left';
+      let totalW = 0;
+      for (let i = 0; i < handleText.length; i++) totalW += c.measureText(handleText[i]).width + (i < handleText.length - 1 ? tracking : 0);
+      let cx = -totalW / 2;
+      c.fillStyle = 'rgba(233, 213, 255, 0.56)'; c.shadowColor = 'rgba(168, 85, 247, 0.45)'; c.shadowBlur = 8;
+      for (let i = 0; i < handleText.length; i++) {
+        c.fillText(handleText[i], cx, 0);
+        cx += c.measureText(handleText[i]).width + tracking;
+      }
+      c.restore();
+    }
+
+    function drawDividerBar(c, W, seamY, lineH) {
+      c.save();
+      const s = W / 1080, h = Math.max(2, Math.round(lineH * s)), barY = Math.round(seamY - h / 2);
+      c.fillStyle = 'rgba(10, 2, 22, 0.88)';
+      c.fillRect(0, barY - 2, W, h + 4);
+      const grad = c.createLinearGradient(0, barY, W, barY);
+      grad.addColorStop(0.0, '#7c3aed'); grad.addColorStop(0.25, '#a855f7');
+      grad.addColorStop(0.5, '#f0abfc'); grad.addColorStop(0.75, '#d946ef'); grad.addColorStop(1.0, '#7c3aed');
+      c.shadowColor = 'rgba(192, 38, 211, 0.95)'; c.shadowBlur = Math.round(14 * s);
+      c.fillStyle = grad; c.fillRect(0, barY, W, h);
+      c.shadowBlur = 0; c.fillStyle = 'rgba(255, 240, 255, 0.55)';
+      c.fillRect(0, barY + Math.floor(h * 0.25), W, Math.max(1, Math.floor(h * 0.35)));
+      c.restore();
+    }
+
+    function drawFooterBar(c, W, footerH, offsetY) {
+      const s = W / 1080, refH = footerH / s, padX = 42;
+      c.save(); c.translate(0, offsetY); c.scale(s, s);
+      const bg = c.createLinearGradient(0, 0, 0, refH);
+      bg.addColorStop(0, 'rgba(13,3,26,0.96)'); bg.addColorStop(1, 'rgba(7,1,15,0.99)');
+      c.fillStyle = bg; c.fillRect(0, 0, 1080, refH);
+
+      const dg = c.createLinearGradient(padX, 1, 1080 - padX, 1);
+      dg.addColorStop(0, 'rgba(192,132,252,0.35)'); dg.addColorStop(0.5, 'rgba(244,114,182,0.68)'); dg.addColorStop(1, 'rgba(192,132,252,0.35)');
+      c.strokeStyle = dg; c.lineWidth = 2; c.beginPath(); c.moveTo(padX, 1); c.lineTo(1080 - padX, 1); c.stroke();
+
+      const midY = refH / 2, bW = 326, bH = Math.min(68, Math.max(46, refH - 22)), bX = 1080 - padX - bW, bY = Math.round((refH - bH) / 2);
+      c.save(); c.beginPath(); c.rect(padX, 0, Math.max(100, bX - padX - 24), refH); c.clip();
+      c.textAlign = 'left'; c.textBaseline = 'middle';
+      c.font = '700 17.5px "Montserrat",sans-serif'; c.fillStyle = '#e9d5ff'; c.fillText(state.footerNote, padX, midY - 13);
+      c.font = '600 16px "Montserrat",sans-serif'; c.fillStyle = '#a855f7'; c.fillText(state.footerSub, padX, midY + 14);
+      c.restore();
+
+      drawRR(c, bX, bY, bW, bH, bH / 2);
+      const bg3 = c.createLinearGradient(bX, bY, bX + bW, bY + bH);
+      bg3.addColorStop(0, 'rgba(38,10,72,0.96)'); bg3.addColorStop(0.6, 'rgba(59,12,92,0.96)'); bg3.addColorStop(1, 'rgba(80,11,74,0.96)');
+      c.fillStyle = bg3; c.fill(); c.lineWidth = 1.9; c.strokeStyle = 'rgba(244,114,182,0.65)'; c.stroke();
+
+      const avR = Math.round(bH * 0.37), avCX = bX + avR + 14, avCY = bY + bH / 2;
+      c.save(); c.beginPath(); c.arc(avCX, avCY, avR, 0, Math.PI * 2); c.fillStyle = '#05010a'; c.fill(); c.clip();
+      if (isReady(state.avatarImg)) {
+        const img = state.avatarImg, d = avR * 2, sc = Math.max(d / img.naturalWidth, d / img.naturalHeight);
+        c.drawImage(img, avCX - (img.naturalWidth * sc) / 2, avCY - (img.naturalHeight * sc) / 2, img.naturalWidth * sc, img.naturalHeight * sc);
+      } else {
+        const avGrad = c.createLinearGradient(avCX - avR, avCY - avR, avCX + avR, avCY + avR);
+        avGrad.addColorStop(0, '#8b00ff'); avGrad.addColorStop(0.5, '#ff007f'); avGrad.addColorStop(1, '#ff9e00');
+        c.fillStyle = avGrad;
+        c.beginPath(); c.moveTo(avCX - 17, avCY - 12); c.lineTo(avCX - 8, avCY - 12); c.lineTo(avCX - 3, avCY + 6); c.lineTo(avCX + 2, avCY - 12); c.lineTo(avCX + 10, avCY - 12); c.lineTo(avCX + 1, avCY + 14); c.lineTo(avCX - 8, avCY + 14); c.closePath(); c.fill();
+        c.fillRect(avCX + 10, avCY - 12, 7.5, 26);
+      }
+      c.restore();
+      c.beginPath(); c.arc(avCX, avCY, avR, 0, Math.PI * 2); c.lineWidth = 2; c.strokeStyle = '#ff2a85'; c.stroke();
+
+      const tx = avCX + avR + 12;
+      c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      c.font = '900 24.5px "Montserrat",sans-serif'; c.fillStyle = '#ffffff'; c.fillText(state.username, tx, bY + Math.round(bH * 0.53));
+      const cx = tx + c.measureText(state.username).width + 14, cy = bY + Math.round(bH * 0.40);
+      c.beginPath(); c.arc(cx, cy, 8.5, 0, Math.PI * 2); c.fillStyle = '#ff2a85'; c.fill();
+      c.beginPath(); c.moveTo(cx - 4, cy); c.lineTo(cx - 1, cy + 3); c.lineTo(cx + 4.5, cy - 3); c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.stroke();
+      c.font = '700 10.5px "Montserrat",sans-serif'; c.fillStyle = '#f472b6'; c.fillText(state.badgeSub, tx, bY + Math.round(bH * 0.79));
+      c.restore();
+    }
+
+    function fillThickText(c, text, x, y, fillStyle, strokeW) {
+      c.save();
+      c.fillStyle = fillStyle;
+      c.fillText(text, x, y);
+      if (strokeW > 0) {
+        c.strokeStyle = fillStyle; c.lineWidth = strokeW; c.lineJoin = 'round'; c.lineCap = 'round';
+        c.strokeText(text, x, y);
+      }
+      c.restore();
+    }
+
+    function wrapSimpleLines(c, text, maxW, maxLines) {
+      const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+      if (words.length === 0) return [];
+      const lines = []; let line = '';
+      for (let i = 0; i < words.length; i++) {
+        const test = line ? `${line} ${words[i]}` : words[i];
+        if (c.measureText(test).width > maxW && line) {
+          lines.push(line);
+          if (lines.length >= maxLines) return lines;
+          line = words[i];
+        } else {
+          line = test;
+        }
+      }
+      if (line && lines.length < maxLines) lines.push(line);
+      return lines;
+    }
+
+    function parseStyledLines(c, rawText, maxW) {
+      const tokens = [];
+      const regex = /(\*[^*]+\*|[^*\s]+|\s+)/g;
+      let m;
+      while ((m = regex.exec(rawText || '')) !== null) {
+        const seg = m[0];
+        if (/^\s+$/.test(seg)) continue;
+        if (seg.startsWith('*') && seg.endsWith('*') && seg.length > 2) {
+          seg.slice(1, -1).split(/\s+/).filter(Boolean).forEach(w => tokens.push({ text: w, hl: true }));
+        } else {
+          tokens.push({ text: seg, hl: false });
+        }
+      }
+      const expanded = [];
+      tokens.forEach(tok => {
+        if (c.measureText(tok.text).width <= maxW) { expanded.push(tok); return; }
+        let chunk = '';
+        for (const ch of tok.text) {
+          if (c.measureText(chunk + ch).width > maxW && chunk.length > 0) {
+            expanded.push({ text: chunk, hl: tok.hl }); chunk = ch;
+          } else { chunk += ch; }
+        }
+        if (chunk) expanded.push({ text: chunk, hl: tok.hl });
+      });
+      const lines = []; let cur = [], curW = 0;
+      const spW = c.measureText(' ').width;
+      expanded.forEach(tok => {
+        const w = c.measureText(tok.text).width;
+        const add = cur.length > 0 ? spW + w : w;
+        if (curW + add > maxW && cur.length > 0) {
+          lines.push({ tokens: cur, width: curW });
+          cur = [tok]; curW = w;
+        } else {
+          cur.push(tok); curW += add;
+        }
+      });
+      if (cur.length > 0) lines.push({ tokens: cur, width: curW });
+      return lines;
+    }
+
+    function drawShadowedToken(c, text, x, y, fillStyle, strokeW) {
+      c.save();
+      c.shadowColor = 'rgba(5, 1, 14, 0.96)'; c.shadowBlur = 16; c.shadowOffsetX = 0; c.shadowOffsetY = 4;
+      c.strokeStyle = 'rgba(8, 1, 17, 0.85)'; c.lineWidth = Math.max(3.6, strokeW * 2.5);
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      c.strokeText(text, x, y);
+      c.shadowBlur = 0; c.shadowOffsetY = 0;
+      c.fillStyle = fillStyle; c.fillText(text, x, y);
+      if (strokeW > 0) { c.strokeStyle = fillStyle; c.lineWidth = strokeW; c.strokeText(text, x, y); }
+      c.restore();
+    }
+
+    function drawBrochureBackground(c, W, H, vignette, isKapak) {
+      const bg = c.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#1b0636'); bg.addColorStop(0.45, '#110422'); bg.addColorStop(1, '#080111');
+      c.fillStyle = bg; c.fillRect(0, 0, W, H);
+
+      const activeBg = isReady(state.customBgImg) ? state.customBgImg : state.defaultBgImg;
+      if (isReady(activeBg)) {
+        c.save(); c.globalAlpha = state.bgOpacity;
+        const sc = Math.max(W / activeBg.naturalWidth, H / activeBg.naturalHeight) * state.bgZoom;
+        const dw = activeBg.naturalWidth * sc, dh = activeBg.naturalHeight * sc;
+        c.drawImage(activeBg, -Math.max(0, dw - W) * state.bgPosX, -Math.max(0, dh - H) * state.bgPosY, dw, dh);
+        c.restore();
+      } else {
+        c.save(); c.globalAlpha = state.bgOpacity;
+        const sky = c.createLinearGradient(0, 0, W, H);
+        sky.addColorStop(0, '#3c096c'); sky.addColorStop(0.45, '#9d174d'); sky.addColorStop(1, '#180533');
+        c.fillStyle = sky; c.fillRect(0, 0, W, H);
+        drawPalm(c, 150, H, 220, 620, 2.0, '#110224', 0.6);
+        drawPalm(c, 930, H, 850, 650, 1.9, '#110224', 0.6);
+        c.restore();
+      }
+
+      if (isKapak) {
+        const topV = c.createLinearGradient(0, 0, 0, 380);
+        topV.addColorStop(0, 'rgba(13,3,27,0.94)'); topV.addColorStop(0.65, 'rgba(13,3,27,0.48)'); topV.addColorStop(1, 'rgba(13,3,27,0)');
+        c.fillStyle = topV; c.fillRect(0, 0, W, 380);
+        const botV = c.createLinearGradient(0, H - 360, 0, H);
+        botV.addColorStop(0, 'rgba(8,1,17,0)'); botV.addColorStop(0.55, 'rgba(8,1,17,0.78)'); botV.addColorStop(1, 'rgba(8,1,17,0.97)');
+        c.fillStyle = botV; c.fillRect(0, H - 360, W, 360);
+      } else {
+        const topV = c.createLinearGradient(0, 0, 0, 220);
+        topV.addColorStop(0, 'rgba(13,3,27,.55)'); topV.addColorStop(1, 'rgba(13,3,27,0)');
+        c.fillStyle = topV; c.fillRect(0, 0, W, 220);
+        const botV = c.createLinearGradient(0, H - 760, 0, H);
+        botV.addColorStop(0, 'rgba(8,1,17,0)');
+        botV.addColorStop(0.35, `rgba(8,1,17,${(vignette * 0.44).toFixed(2)})`);
+        botV.addColorStop(0.70, `rgba(8,1,17,${(vignette * 0.86).toFixed(2)})`);
+        botV.addColorStop(1, `rgba(8,1,17,${Math.min(0.99, vignette + 0.08).toFixed(2)})`);
+        c.fillStyle = botV; c.fillRect(0, H - 760, W, 760);
+      }
+    }
+
+    function drawKapakContent(c, W, H, padX) {
+      c.save();
+      c.font = '900 84px "Outfit","Montserrat",sans-serif'; c.fillStyle = '#fff'; c.textBaseline = 'top';
+      c.fillText((state.kapakT1 || 'GTA 6').toLocaleUpperCase('tr-TR'), padX, 34);
+      c.restore();
+
+      const t2 = (state.kapakT2 || '').toLocaleUpperCase('tr-TR');
+      if (t2) {
+        c.save();
+        let t2Size = 86;
+        c.font = `900 ${t2Size}px "Outfit","Montserrat",sans-serif`;
+        while (c.measureText(t2).width > 565 && t2Size > 46) { t2Size -= 4; c.font = `900 ${t2Size}px "Outfit","Montserrat",sans-serif`; }
+        c.textBaseline = 'top';
+        const tg = c.createLinearGradient(padX, 118, padX + 480, 195);
+        tg.addColorStop(0, '#ffc400'); tg.addColorStop(0.45, '#ff6d00'); tg.addColorStop(0.85, '#ff007f'); tg.addColorStop(1, '#d946ef');
+        c.fillStyle = tg; c.fillText(t2, padX, 118 + (86 - t2Size) * 0.4);
+        c.restore();
+      }
+
+      const pW = 368, pH = 38, pX = W - padX - pW, pY = 162;
+      c.save();
+      drawRR(c, pX, pY, pW, pH, 19);
+      const pg = c.createLinearGradient(pX, pY, pX + pW, pY);
+      pg.addColorStop(0, '#ff1e8a'); pg.addColorStop(0.55, '#d900ff'); pg.addColorStop(1, '#8a00ff');
+      c.fillStyle = pg; c.fill();
+      c.lineWidth = 1.5; c.strokeStyle = 'rgba(255,190,235,0.5)'; c.stroke();
+      c.font = '800 17.5px "Montserrat",sans-serif'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText((state.kapakPill || 'VICE CITY • GÜNDEM').toLocaleUpperCase('tr-TR'), pX + pW / 2, pY + pH / 2 + 1);
+      c.restore();
+
+      const boxW = W - padX * 2, innerPadX = 46, maxTextW = boxW - innerPadX * 2;
+      const dateStr = (state.kapakDate || '').trim().toLocaleUpperCase('tr-TR');
+      const hasTag = Boolean((state.kapakBoxTag || '').trim());
+      const hasDate = Boolean(dateStr);
+      const hasSub = Boolean((state.kapakSub || '').trim());
+      const hasSwipe = Boolean((state.kapakSwipe || '').trim());
+
+      let dateFont = state.kapakDateSize;
+      if (hasDate) {
+        c.font = `900 ${dateFont}px "Montserrat","Outfit",sans-serif`;
+        while (c.measureText(dateStr).width > maxTextW && dateFont > 52) {
+          dateFont -= 3; c.font = `900 ${dateFont}px "Montserrat","Outfit",sans-serif`;
+        }
+      }
+
+      let hFont = state.kapakHeadSize, hLineH = Math.round(hFont * 1.22), hLines = [], subLines = [], contentH = 0;
+      const tagH = hasTag ? 62 : 0;
+      const dateH = hasDate ? Math.round(dateFont * 1.12) + 28 : 0;
+      const dividerH = (hasDate && (state.kapakHead || '').trim()) ? 34 : 0;
+      const swipeH = hasSwipe ? 88 : 0;
+
+      while (hFont >= 36) {
+        c.font = `900 ${hFont}px "Montserrat","Outfit",sans-serif`;
+        hLineH = Math.round(hFont * 1.22);
+        hLines = parseStyledLines(c, (state.kapakHead || '').toLocaleUpperCase('tr-TR'), maxTextW);
+        c.font = '700 25px "Montserrat",sans-serif';
+        subLines = hasSub ? wrapSimpleLines(c, state.kapakSub, maxTextW - 30, 2) : [];
+        const subBlockH = subLines.length > 0 ? (22 + subLines.length * 34) : 0;
+        contentH = tagH + dateH + dividerH + (hLines.length * hLineH) + subBlockH + swipeH;
+        if (contentH <= 760) break;
+        hFont -= 3;
+      }
+
+      const boxH = Math.min(880, Math.max(620, contentH + 104));
+      const minY = 232, maxY = Math.max(minY, (H - 122) - boxH);
+      const boxY = Math.round(minY + (maxY - minY) * state.kapakBoxPosY), boxX = padX;
+
+      c.save();
+      drawRR(c, boxX, boxY, boxW, boxH, 28);
+      const cg = c.createLinearGradient(boxX, boxY, boxX, boxY + boxH);
+      cg.addColorStop(0, `rgba(26,6,52,${state.kapakBoxOpacity})`);
+      cg.addColorStop(0.55, `rgba(17,4,36,${Math.min(0.98, state.kapakBoxOpacity + 0.04)})`);
+      cg.addColorStop(1, `rgba(10,2,24,${Math.min(0.99, state.kapakBoxOpacity + 0.07)})`);
+      c.fillStyle = cg; c.shadowColor = 'rgba(0,0,0,0.72)'; c.shadowBlur = 36; c.fill(); c.shadowBlur = 0;
+
+      c.save();
+      drawRR(c, boxX, boxY, boxW, boxH, 28); c.clip();
+      const topBar = c.createLinearGradient(boxX, boxY, boxX + boxW, boxY);
+      topBar.addColorStop(0, '#ffc400'); topBar.addColorStop(0.38, '#ff007f'); topBar.addColorStop(0.74, '#a855f7'); topBar.addColorStop(1, '#00e5ff');
+      c.fillStyle = topBar; c.fillRect(boxX, boxY, boxW, 7);
+      const centerGlow = c.createRadialGradient(W / 2, boxY + boxH * 0.42, 20, W / 2, boxY + boxH * 0.42, 420);
+      centerGlow.addColorStop(0, 'rgba(255,0,140,0.14)'); centerGlow.addColorStop(0.55, 'rgba(138,0,255,0.08)'); centerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = centerGlow; c.fillRect(boxX, boxY, boxW, boxH);
+      c.restore();
+
+      drawRR(c, boxX, boxY, boxW, boxH, 28);
+      const borderGrad = c.createLinearGradient(boxX, boxY, boxX + boxW, boxY + boxH);
+      borderGrad.addColorStop(0, 'rgba(255,196,37,0.85)'); borderGrad.addColorStop(0.5, 'rgba(255,0,127,0.72)'); borderGrad.addColorStop(1, 'rgba(0,229,255,0.72)');
+      c.lineWidth = 2.8; c.strokeStyle = borderGrad; c.stroke();
+
+      let curY = boxY + Math.round((boxH - contentH) / 2);
+
+      if (hasTag) {
+        const ts = state.kapakBoxTag.trim().toLocaleUpperCase('tr-TR');
+        c.font = '900 17px "Montserrat",sans-serif';
+        const tW = Math.max(170, c.measureText(ts).width + 44), tX = (W - tW) / 2;
+        drawRR(c, tX, curY, tW, 38, 11);
+        const tagG = c.createLinearGradient(tX, curY, tX + tW, curY);
+        tagG.addColorStop(0, '#ffd000'); tagG.addColorStop(1, '#ff6d00');
+        c.fillStyle = tagG; c.fill();
+        c.fillStyle = '#120324'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(ts, W / 2, curY + 20);
+        curY += tagH;
+      }
+
+      if (hasDate) {
+        c.font = `900 ${dateFont}px "Montserrat","Outfit",sans-serif`;
+        c.textAlign = 'center'; c.textBaseline = 'top';
+        const dGrad = c.createLinearGradient(W / 2 - 280, curY, W / 2 + 280, curY + dateFont);
+        dGrad.addColorStop(0.0, '#fff3b0'); dGrad.addColorStop(0.45, '#ffc400'); dGrad.addColorStop(0.85, '#ff7b00'); dGrad.addColorStop(1.0, '#ff2a85');
+        fillThickText(c, dateStr, W / 2, curY, dGrad, Math.max(2.6, dateFont * 0.032));
+        curY += dateH;
+      }
+
+      if (dividerH > 0) {
+        const lineW = 340, lineY = curY + 6;
+        const lGrad = c.createLinearGradient(W / 2 - lineW / 2, lineY, W / 2 + lineW / 2, lineY);
+        lGrad.addColorStop(0, 'rgba(255,196,0,0)'); lGrad.addColorStop(0.25, '#ffc400');
+        lGrad.addColorStop(0.5, '#ff007f'); lGrad.addColorStop(0.75, '#00e5ff'); lGrad.addColorStop(1, 'rgba(0,229,255,0)');
+        c.strokeStyle = lGrad; c.lineWidth = 4; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(W / 2 - lineW / 2, lineY); c.lineTo(W / 2 + lineW / 2, lineY); c.stroke();
+        curY += dividerH;
+      }
+
+      if (hLines.length > 0) {
+        c.font = `900 ${hFont}px "Montserrat","Outfit",sans-serif`;
+        c.textBaseline = 'top'; c.textAlign = 'left';
+        const spW = c.measureText(' ').width, thickness = Math.max(2.2, hFont * 0.042);
+        hLines.forEach(ln => {
+          let dx = (W - ln.width) / 2;
+          ln.tokens.forEach((tok, idx) => {
+            fillThickText(c, tok.text, dx, curY, tok.hl ? '#ffc425' : '#ffffff', thickness);
+            dx += c.measureText(tok.text).width + (idx < ln.tokens.length - 1 ? spW : 0);
+          });
+          curY += hLineH;
+        });
+      }
+
+      if (subLines.length > 0) {
+        curY += 22;
+        c.font = '700 25px "Montserrat",sans-serif'; c.fillStyle = '#e9d5ff';
+        c.textAlign = 'center'; c.textBaseline = 'top';
+        subLines.forEach(sl => { c.fillText(sl, W / 2, curY); curY += 34; });
+      }
+
+      if (hasSwipe) {
+        curY += 30;
+        const swText = state.kapakSwipe.trim().toLocaleUpperCase('tr-TR');
+        c.font = '900 20px "Montserrat",sans-serif';
+        const swW = Math.min(maxTextW, Math.max(300, c.measureText(swText).width + 64)), swH = 54, swX = (W - swW) / 2;
+        drawRR(c, swX, curY, swW, swH, 27);
+        const swGrad = c.createLinearGradient(swX, curY, swX + swW, curY);
+        swGrad.addColorStop(0, '#ff1e8a'); swGrad.addColorStop(0.55, '#c026d3'); swGrad.addColorStop(1, '#7c3aed');
+        c.fillStyle = swGrad; c.fill();
+        c.lineWidth = 2; c.strokeStyle = 'rgba(255,215,245,0.65)'; c.stroke();
+        c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(swText, W / 2, curY + swH / 2 + 1);
+      }
+      c.restore();
+    }
+
+    function drawCoverCrop(c, video, box, dx, dy, dw, dh) {
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) return;
+      const sx = box.x * vw, sy = box.y * vh, sw = Math.max(2, box.w * vw), sh = Math.max(2, box.h * vh);
+      const tAsp = dw / dh, sAsp = sw / sh;
+      let fx = sx, fy = sy, fw = sw, fh = sh;
+      if (sAsp > tAsp) { fw = sh * tAsp; fx = sx + (sw - fw) / 2; }
+      else { fh = sw / tAsp; fy = sy + (sh - fh) / 2; }
+      c.drawImage(video, fx, fy, fw, fh, dx, dy, dw, dh);
+    }
+
+    function drawBlurredBg(c, video, outW, outH) {
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) return;
+      const sw = evenInt(outW / 5, 64), sh = evenInt(outH / 5, 64), pad = Math.ceil(state.videoBlur * 1.4);
+      if (blurCanvas.width !== sw) blurCanvas.width = sw;
+      if (blurCanvas.height !== sh) blurCanvas.height = sh;
+      const sc = Math.max((sw + pad * 2) / vw, (sh + pad * 2) / vh);
+      const dw = vw * sc, dh = vh * sc;
+      blurCtx.save(); blurCtx.filter = `blur(${state.videoBlur}px)`;
+      blurCtx.drawImage(video, (sw - dw) / 2, (sh - dh) / 2, dw, dh);
+      blurCtx.restore();
+      c.drawImage(blurCanvas, 0, 0, sw, sh, 0, 0, outW, outH);
+    }
+
+    function computeVideoDims() {
+      const baseW = state.videoQuality;
+      if (state.videoSubMode === 'footer_only') {
+        let vw = videoEl.videoWidth || 1080, vh = videoEl.videoHeight || 1920;
+        const sc = Math.min(1, baseW / Math.max(vw, 1));
+        const outW = evenInt(vw * sc, 64), baseH = evenInt(vh * sc, 64);
+        const ftH = state.videoFtOn ? evenInt(state.videoFtH * (outW / 1080), 32) : 0;
+        return { outW, outH: evenInt(baseH + ftH, 64), baseH, ftH, fcOutH: 0, gpOutH: baseH };
+      }
+      const outW = evenInt(baseW, 64);
+      const outH = state.videoFormat === '4:5' ? evenInt(outW * 1.25, 64) : evenInt(outW * (16 / 9), 64);
+      const ftH = state.videoFtOn ? evenInt(state.videoFtH * (outW / 1080), 32) : 0;
+      if (state.videoSubMode === 'fit_blur') {
+        const fcOutH = evenInt(outH * state.videoFcRatio, 64);
+        return { outW, outH, baseH: outH, ftH, fcOutH, gpOutH: evenInt(outH - fcOutH, 64) };
+      }
+      const usableH = state.videoFtOn ? (outH - ftH) : outH;
+      const fcOutH = evenInt(usableH * state.videoFcRatio, 64);
+      return { outW, outH, baseH: outH, ftH, fcOutH, gpOutH: evenInt(usableH - fcOutH, 64) };
+    }
+
+    function renderFacecamFrame(targetCanvas) {
+      const ac = targetCanvas || canvas, c = ac.getContext('2d');
+      const { outW, outH, baseH, ftH, fcOutH, gpOutH } = computeVideoDims();
+      if (ac.width !== outW) ac.width = outW;
+      if (ac.height !== outH) ac.height = outH;
+      document.getElementById('res-info').textContent = `${outW}×${outH} • Video`;
+      c.fillStyle = '#080111'; c.fillRect(0, 0, outW, outH);
+
+      const hasVid = state.videoLoaded && videoEl.readyState >= 2 && videoEl.videoWidth > 0;
+      if (state.videoSubMode === 'footer_only') {
+        if (hasVid) { c.drawImage(videoEl, 0, 0, outW, baseH); }
+        else {
+          const g = c.createLinearGradient(0, 0, outW, baseH); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#10031f');
+          c.fillStyle = g; c.fillRect(0, 0, outW, baseH);
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = `900 ${Math.round(outW * 0.055)}px "Outfit",sans-serif`; c.fillStyle = '#f472b6';
+          c.fillText('VİDEO SEÇİN', outW / 2, baseH / 2);
+        }
+        if (state.videoFtOn) drawFooterBar(c, outW, ftH, baseH);
+        return;
+      }
+
+      if (hasVid) {
+        if (state.videoSubMode === 'fit_blur') {
+          drawBlurredBg(c, videoEl, outW, outH);
+          drawCoverCrop(c, videoEl, state.fc, 0, 0, outW, fcOutH);
+          const sc = Math.min(outW / videoEl.videoWidth, gpOutH / videoEl.videoHeight);
+          const dw = videoEl.videoWidth * sc, dh = videoEl.videoHeight * sc;
+          c.drawImage(videoEl, (outW - dw) / 2, fcOutH, dw, dh);
+        } else {
+          drawCoverCrop(c, videoEl, state.fc, 0, 0, outW, fcOutH);
+          drawCoverCrop(c, videoEl, state.gp, 0, fcOutH, outW, gpOutH);
+        }
+      } else {
+        const g1 = c.createLinearGradient(0, 0, outW, fcOutH); g1.addColorStop(0, '#2a0944'); g1.addColorStop(1, '#160429');
+        c.fillStyle = g1; c.fillRect(0, 0, outW, fcOutH);
+        const g2 = c.createLinearGradient(0, fcOutH, outW, outH); g2.addColorStop(0, '#140424'); g2.addColorStop(1, '#090214');
+        c.fillStyle = g2; c.fillRect(0, fcOutH, outW, outH - fcOutH);
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.font = `900 ${Math.round(outW * 0.052)}px "Outfit",sans-serif`;
+        c.fillStyle = '#ff2a85'; c.fillText('FACECAM', outW / 2, fcOutH / 2);
+        c.fillStyle = '#00e5ff'; c.fillText('OYUN EKRANI', outW / 2, fcOutH + (outH - fcOutH - ftH) / 2);
+      }
+
+      if (state.videoDivOn) drawDividerBar(c, outW, fcOutH, state.videoDivH);
+      if (state.videoFtOn) drawFooterBar(c, outW, ftH, Math.max(0, outH - ftH));
+    }
+
+    function renderCanvas(targetCanvas) {
+      if (state.mode === 'facecam') { renderFacecamFrame(targetCanvas); return; }
+      const ac = targetCanvas || canvas, c = ac.getContext('2d');
+
+      if (state.mode === 'foto') {
+        const srcW = isReady(state.photoImg) ? state.photoImg.naturalWidth : 1080;
+        const srcH = isReady(state.photoImg) ? state.photoImg.naturalHeight : 1350;
+        const outW = evenInt(srcW, 64), baseH = evenInt(srcH, 64), scale = outW / 1080;
+        const footerH = evenInt(state.footerH * scale, 32);
+        const footerPad = Math.max(0, Math.round(state.footerPad * scale));
+        const outH = state.footerPlace === 'append' ? evenInt(baseH + footerH, 64) : baseH;
+        ac.width = outW; ac.height = outH;
+        document.getElementById('res-info').textContent = `${outW}×${outH}`;
+        c.fillStyle = '#080111'; c.fillRect(0, 0, outW, outH);
+
+        if (isReady(state.photoImg)) {
+          c.drawImage(state.photoImg, 0, 0, outW, baseH);
+        } else {
+          const g = c.createLinearGradient(0, 0, outW, baseH); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#10031f');
+          c.fillStyle = g; c.fillRect(0, 0, outW, baseH);
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = '900 44px "Outfit","Montserrat",sans-serif'; c.fillStyle = '#f472b6';
+          c.fillText('FOTOĞRAF SEÇİN', outW / 2, baseH / 2 - 22);
+          c.font = '700 24px "Montserrat",sans-serif'; c.fillStyle = '#c4b5fd';
+          c.fillText('Altına vice.cityiv footer eklenir', outW / 2, baseH / 2 + 28);
+        }
+        const fy = state.footerPlace === 'append' ? baseH : Math.max(0, baseH - footerH - footerPad);
+        drawFooterBar(c, outW, footerH, fy);
+        return;
+      }
+
+      const W = 1080, H = 1350, padX = 46;
+      ac.width = 2160; ac.height = 2700;
+      document.getElementById('res-info').textContent = '2160×2700 • 4:5';
+      c.save(); c.clearRect(0, 0, 2160, 2700); c.scale(2, 2);
+
+      const vig = state.mode === 'tek' ? state.tekVignette : state.maddeVignette;
+      drawBrochureBackground(c, W, H, vig, state.mode === 'kapak');
+      drawTopLogo(c, W - padX - 4, 26, 164, 115);
+
+      if (state.mode === 'kapak') {
+        drawKapakContent(c, W, H, padX);
+        drawFooterBar(c, W, 102, H - 102);
+        c.restore();
+        return;
+      }
+
+      drawLeftNeonRail(c, H, 145);
+      const textLeft = 96, textRight = 54, maxW = W - textLeft - textRight;
+
+      if (state.mode === 'tek') {
+        let fSize = state.tekSize, lineH, styledLines, actualH;
+        while (fSize >= 28) {
+          c.font = `900 ${fSize}px "Montserrat","Outfit",sans-serif`;
+          lineH = Math.round(fSize * 1.28);
+          styledLines = parseStyledLines(c, state.tekSentence, maxW);
+          actualH = Math.max(lineH, styledLines.length * lineH);
+          if (actualH <= 760) break;
+          fSize -= 2;
+        }
+        const minY = 175, maxY = Math.max(minY, (H - 148) - actualH);
+        let curY = Math.round(minY + (maxY - minY) * state.tekPosY);
+        c.save();
+        c.font = `900 ${fSize}px "Montserrat","Outfit",sans-serif`;
+        c.textBaseline = 'top'; c.textAlign = 'left';
+        const spW = c.measureText(' ').width, strokeW = Math.max(1.5, fSize * 0.036);
+        styledLines.forEach(ln => {
+          let dx = state.tekAlign === 'center' ? (textLeft + (maxW - ln.width) / 2) : textLeft;
+          ln.tokens.forEach((tok, idx) => {
+            drawShadowedToken(c, tok.text, dx, curY, tok.hl ? '#ffc425' : '#ffffff', strokeW);
+            dx += c.measureText(tok.text).width + (idx < ln.tokens.length - 1 ? spW : 0);
+          });
+          curY += lineH;
+        });
+        c.restore();
+      } else {
+        const bottomAnchorY = H - 140, minTopY = 170, maxAllowedH = bottomAnchorY - minTopY;
+        const rawLines = state.maddeLines.map(s => String(s || '').trim()).filter(Boolean);
+        const scales = [1.0, 0.92, 0.85, 0.78, 0.72, 0.65];
+        let chosen = null;
+
+        for (let si = 0; si < scales.length; si++) {
+          const sc = scales[si];
+          const hSize = Math.round(state.maddeHeadSize * sc), hLineH = Math.round(hSize * 1.24);
+          const bSize = Math.round(state.maddeBodySize * sc), bLineH = Math.round(bSize * 1.32);
+          const headGap = Math.round(22 * sc), itemGap = Math.round(14 * sc);
+
+          c.font = `900 ${hSize}px "Outfit","Montserrat",sans-serif`;
+          const hLines = state.maddeHead.trim() ? parseStyledLines(c, state.maddeHead.trim(), maxW) : [];
+
+          const parsedItems = rawLines.map(lineStr => {
+            const numMatch = lineStr.match(/^(\d+\s*[-–.)]\s*|•\s*)(.+)$/);
+            let prefix = '', bodyText = lineStr;
+            if (numMatch) { prefix = numMatch[1].trim() + ' '; bodyText = numMatch[2].trim(); }
+            c.font = `900 ${bSize}px "Montserrat",sans-serif`;
+            const prefixW = prefix ? c.measureText(prefix).width + 4 : 0;
+            c.font = `700 ${bSize}px "Montserrat",sans-serif`;
+            const wrapped = parseStyledLines(c, bodyText, Math.max(200, maxW - prefixW));
+            return { prefix, prefixW, wrapped };
+          });
+
+          const headH = hLines.length * hLineH;
+          let bodyH = 0;
+          parsedItems.forEach((it, idx) => { bodyH += Math.max(1, it.wrapped.length) * bLineH + (idx < parsedItems.length - 1 ? itemGap : 0); });
+          const totalH = headH + (headH > 0 && bodyH > 0 ? headGap : 0) + bodyH;
+          chosen = { hSize, hLineH, bSize, bLineH, headGap, itemGap, hLines, parsedItems, totalH };
+          if (totalH <= maxAllowedH) break;
+        }
+
+        let curY = Math.max(minTopY, bottomAnchorY - chosen.totalH);
+        c.save(); c.textAlign = 'left'; c.textBaseline = 'top';
+        if (chosen.hLines.length > 0) {
+          c.font = `900 ${chosen.hSize}px "Outfit","Montserrat",sans-serif`;
+          const spW = c.measureText(' ').width, strokeW = Math.max(1.4, chosen.hSize * 0.032);
+          chosen.hLines.forEach(ln => {
+            let dx = textLeft;
+            ln.tokens.forEach((tok, idx) => {
+              drawShadowedToken(c, tok.text, dx, curY, tok.hl ? '#ffc425' : '#ffffff', strokeW);
+              dx += c.measureText(tok.text).width + (idx < ln.tokens.length - 1 ? spW : 0);
+            });
+            curY += chosen.hLineH;
+          });
+          if (chosen.parsedItems.length > 0) {
+            const sepY = curY + Math.round(chosen.headGap * 0.35);
+            const sepGrad = c.createLinearGradient(textLeft, sepY, textLeft + 320, sepY);
+            sepGrad.addColorStop(0, '#ffc400'); sepGrad.addColorStop(0.55, '#ff1e8a'); sepGrad.addColorStop(1, 'rgba(168,85,247,0)');
+            c.fillStyle = sepGrad; c.fillRect(textLeft, sepY, 320, 3.5);
+            curY += chosen.headGap;
+          }
+        }
+        const bStroke = Math.max(0.7, chosen.bSize * 0.02);
+        chosen.parsedItems.forEach((it, idx) => {
+          if (it.prefix) {
+            c.font = `900 ${chosen.bSize}px "Montserrat",sans-serif`;
+            drawShadowedToken(c, it.prefix.trim(), textLeft, curY, '#ffc425', bStroke * 1.4);
+          }
+          c.font = `700 ${chosen.bSize}px "Montserrat",sans-serif`;
+          const spW = c.measureText(' ').width;
+          it.wrapped.forEach(ln => {
+            let dx = textLeft + it.prefixW;
+            ln.tokens.forEach((tok, tIdx) => {
+              drawShadowedToken(c, tok.text, dx, curY, tok.hl ? '#ffc425' : '#f5eeff', bStroke);
+              dx += c.measureText(tok.text).width + (tIdx < ln.tokens.length - 1 ? spW : 0);
+            });
+            curY += chosen.bLineH;
+          });
+          if (idx < chosen.parsedItems.length - 1) curY += chosen.itemGap;
+        });
+        c.restore();
+      }
+
+      drawFooterBar(c, W, 102, H - 102);
+      c.restore();
+    }
+
+    function getVideoContentRect() {
+      const rect = videoEl.getBoundingClientRect();
+      const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
+      if (!vw || !vh || !rect.width || !rect.height) return { left: 0, top: 0, width: rect.width, height: rect.height };
+      const sc = Math.min(rect.width / vw, rect.height / vh);
+      const w = vw * sc, h = vh * sc;
+      return { left: (rect.width - w) / 2, top: (rect.height - h) / 2, width: w, height: h };
+    }
+
+    function syncCropBoxes() {
+      const show = state.mode === 'facecam' && state.videoLoaded && state.videoSubMode !== 'footer_only' && videoEl.videoWidth > 0;
+      overlayEl.classList.toggle('hidden', !show);
+      if (!show) return;
+      const r = getVideoContentRect();
+      const place = (el, b) => {
+        el.style.left = `${r.left + b.x * r.width}px`;
+        el.style.top = `${r.top + b.y * r.height}px`;
+        el.style.width = `${b.w * r.width}px`;
+        el.style.height = `${b.h * r.height}px`;
+      };
+      place(fcBoxEl, state.fc);
+      gpBoxEl.classList.toggle('hidden', state.videoSubMode !== 'crop_fill');
+      if (state.videoSubMode === 'crop_fill') place(gpBoxEl, state.gp);
+    }
+
+    function updateCaption() {
+      let body = '';
+      if (state.mode === 'tek') {
+        body = state.tekSentence.replace(/\*+/g, '');
+      } else if (state.mode === 'madde') {
+        body = state.maddeHead.replace(/\*+/g, '') + '\n\n' + state.maddeLines.map(l => l.replace(/\*+/g, '')).join('\n');
+      } else if (state.mode === 'kapak') {
+        const cleanHead = (state.kapakHead || '').replace(/\*+/g, '').trim();
+        const subPart = state.kapakSub ? `${state.kapakSub}\n\n` : '';
+        document.getElementById('txt-caption').value =
+          `🌴 ${state.kapakDate} | ${cleanHead}\n\n${subPart}👉 Günün tüm gelişmelerini görmek için yana kaydırın!\n\n🔔 Günlük GTA 6 haberleri için takip et: @${state.username}\n\n#gta6 #gtavi #vicecity #gta6haberleri #rockstargames #gtaturkiye`;
+        return;
+      } else {
+        body = state.footerNote;
+      }
+      document.getElementById('txt-caption').value = `🌴 ${body}\n\n🔔 Takip et: @${state.username}\n\n#gta6 #gtavi #vicecity #gta6haberleri #rockstargames`;
+    }
+
+    function syncUI() {
+      const modes = ['tek', 'madde', 'kapak', 'foto', 'facecam'];
+      modes.forEach(m => {
+        const btn = document.getElementById('tab-' + m);
+        const baseSpan = m === 'facecam' ? 'col-span-2 sm:col-span-1 ' : '';
+        btn.className = m === state.mode
+          ? baseSpan + 'bg-gradient-to-r from-pink-600 to-purple-600 text-white py-2.5 px-2 rounded-xl border border-pink-300/60 cursor-pointer'
+          : baseSpan + 'bg-[#0b0217] text-purple-200 py-2.5 px-2 rounded-xl border border-purple-500/40 cursor-pointer';
+        document.getElementById('panel-' + m).classList.toggle('hidden', m !== state.mode);
+      });
+
+      const isBrochure = state.mode === 'tek' || state.mode === 'madde' || state.mode === 'kapak';
+      document.getElementById('panel-bg-controls').classList.toggle('hidden', !isBrochure);
+      document.getElementById('btn-png-export').classList.toggle('hidden', state.mode === 'facecam');
+      document.getElementById('btn-main-export').textContent = state.mode === 'facecam' ? 'VİDEOYU KAYDET' : 'KAYDET / PAYLAŞ';
+
+      const isAppend = state.footerPlace === 'append';
+      document.getElementById('btn-place-append').className = isAppend
+        ? 'bg-gradient-to-r from-cyan-500 to-emerald-500 text-black py-2 px-2 rounded-xl border border-cyan-200 cursor-pointer'
+        : 'bg-[#0b0217] text-purple-200 py-2 px-2 rounded-xl border border-purple-500/40 cursor-pointer';
+      document.getElementById('btn-place-overlay').className = !isAppend
+        ? 'bg-gradient-to-r from-cyan-500 to-emerald-500 text-black py-2 px-2 rounded-xl border border-cyan-200 cursor-pointer'
+        : 'bg-[#0b0217] text-purple-200 py-2 px-2 rounded-xl border border-purple-500/40 cursor-pointer';
+      document.getElementById('wrap-ft-pad').classList.toggle('hidden', isAppend);
+
+      const vmMap = { fit_blur: 'vmode-fit', crop_fill: 'vmode-crop', footer_only: 'vmode-ft' };
+      Object.entries(vmMap).forEach(([k, id]) => {
+        document.getElementById(id).className = k === state.videoSubMode
+          ? 'bg-gradient-to-r from-cyan-500 to-emerald-500 text-black py-2 px-1.5 rounded-xl border border-cyan-200 cursor-pointer'
+          : 'bg-[#0b0217] text-purple-200 py-2 px-1.5 rounded-xl border border-purple-500/40 cursor-pointer';
+      });
+      const isFtOnly = state.videoSubMode === 'footer_only';
+      document.getElementById('fc-presets-row').classList.toggle('hidden', isFtOnly);
+      document.getElementById('wrap-v-ratio').classList.toggle('hidden', isFtOnly);
+      document.getElementById('wrap-v-blur').classList.toggle('hidden', state.videoSubMode !== 'fit_blur');
+      document.getElementById('wrap-v-div').classList.toggle('hidden', isFtOnly);
+      document.getElementById('sel-v-format').classList.toggle('hidden', isFtOnly);
+
+      updateCaption();
+      syncCropBoxes();
+      renderCanvas();
+    }
+
+    window.setMode = function(m) { state.mode = m; syncUI(); };
+    window.setFooterPlace = function(p) { state.footerPlace = p; syncUI(); };
+    window.setVideoSubMode = function(sm) { state.videoSubMode = sm; syncUI(); };
+    window.resetBgToDefault = function() { state.customBgImg = null; renderCanvas(); };
+    window.setKapakDate = function(offsetDays) {
+      state.kapakDate = formatTurkishDate(offsetDays);
+      document.getElementById('inp-k-date').value = state.kapakDate;
+      updateCaption(); renderCanvas();
+    };
+
+    window.presetFacecam = function(pos) {
+      const p = {
+        bl: { x: 0.015, y: 0.68, w: 0.25, h: 0.30 },
+        br: { x: 0.735, y: 0.68, w: 0.25, h: 0.30 },
+        tl: { x: 0.015, y: 0.02, w: 0.25, h: 0.30 },
+        tr: { x: 0.735, y: 0.02, w: 0.25, h: 0.30 },
+        mr: { x: 0.735, y: 0.35, w: 0.25, h: 0.30 }
+      };
+      if (p[pos]) { state.fc = { ...p[pos] }; syncCropBoxes(); renderCanvas(); }
+    };
+
+    window.autoNumberLines = function() {
+      const ta = document.getElementById('inp-madde-lines');
+      const cleaned = ta.value.split('\n').map(l => l.trim()).filter(Boolean).map((l, i) => `${i + 1} - ${l.replace(/^(\d+\s*[-–.)]\s*|•\s*)/, '')}`);
+      ta.value = cleaned.join('\n');
+      state.maddeLines = cleaned;
+      updateCaption(); renderCanvas();
+    };
+
+    window.copyCaption = function() {
+      const el = document.getElementById('txt-caption');
+      const btn = document.getElementById('btn-copy-cap');
+      navigator.clipboard?.writeText(el.value).catch(() => { el.select(); document.execCommand('copy'); });
+      btn.textContent = '✓ Kopyalandı';
+      setTimeout(() => { btn.textContent = 'Kopyala'; }, 1600);
+    };
+
+    async function shareOrDownloadBlob(blob, filename) {
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: filename });
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    window.handleMainExport = function() {
+      if (state.mode === 'facecam') window.exportVideo();
+      else window.exportImage('jpg', true);
+    };
+
+    window.exportImage = function(fmt, preferShare) {
+      const isPng = fmt === 'png';
+      const out = document.createElement('canvas');
+      renderCanvas(out);
+      const mime = isPng ? 'image/png' : 'image/jpeg';
+      const filename = `vicecityiv_${state.mode}_${Date.now()}.${isPng ? 'png' : 'jpg'}`;
+      out.toBlob(blob => {
+        if (!blob) return;
+        if (preferShare) shareOrDownloadBlob(blob, filename);
+        else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+        }
+      }, mime, isPng ? 1.0 : 0.96);
+    };
+
+    window.exportFooterPNG = function() {
+      const fCanvas = document.createElement('canvas');
+      fCanvas.width = 2160; fCanvas.height = evenInt(state.footerH * 2, 64);
+      const fc = fCanvas.getContext('2d');
+      fc.scale(2, 2);
+      drawFooterBar(fc, 1080, state.footerH, 0);
+      fCanvas.toBlob(blob => { if (blob) shareOrDownloadBlob(blob, 'vicecityiv_footer.png'); }, 'image/png', 1.0);
+    };
+
+    function showVideoError(msg) {
+      const el = document.getElementById('v-error-msg');
+      if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function ensureAudioGraph() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) {
+        audioCtx = new AC();
+        mediaSrcNode = audioCtx.createMediaElementSource(videoEl);
+        audioDestNode = audioCtx.createMediaStreamDestination();
+        monitorGainNode = audioCtx.createGain();
+        mediaSrcNode.connect(audioDestNode);
+        mediaSrcNode.connect(monitorGainNode);
+        monitorGainNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+      return audioDestNode;
+    }
+
+    function pickVideoMime() {
+      if (typeof MediaRecorder === 'undefined') return '';
+      const list = [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=avc1',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ];
+      for (const m of list) {
+        if (MediaRecorder.isTypeSupported(m)) return m;
+      }
+      return '';
+    }
+
+    window.cancelVideoExport = function() {
+      recordCancelled = true;
+      if (activeRecorder && activeRecorder.state !== 'inactive') activeRecorder.stop();
+      videoEl.pause();
+    };
+
+    window.exportVideo = async function() {
+      showVideoError('');
+      if (!state.videoLoaded || !videoEl.duration) {
+        showVideoError('Önce galeriden bir video seçin.');
+        return;
+      }
+      if (isRecording) return;
+      if (typeof MediaRecorder === 'undefined' || !canvas.captureStream) {
+        showVideoError('Bu tarayıcı video kaydını desteklemiyor.');
+        return;
+      }
+      const mime = pickVideoMime();
+      if (!mime) { showVideoError('Desteklenen video kodeği bulunamadı.'); return; }
+
+      isRecording = true;
+      recordCancelled = false;
+      const box = document.getElementById('rec-progress-box');
+      const bar = document.getElementById('rec-progress-bar');
+      const statusTxt = document.getElementById('rec-status-text');
+      const mainBtn = document.getElementById('btn-main-export');
+      box.classList.remove('hidden'); bar.style.width = '0%'; statusTxt.textContent = 'Hazırlanıyor...'; mainBtn.disabled = true;
+
+      const prevLoop = videoEl.loop;
+      videoEl.pause(); videoEl.loop = false; videoEl.muted = false;
+
+      let audioDest = null;
+      try {
+        audioDest = ensureAudioGraph();
+        if (monitorGainNode) monitorGainNode.gain.value = 0;
+      } catch (_) {}
+
+      await new Promise(resolve => {
+        if (Math.abs(videoEl.currentTime) < 0.02) return resolve();
+        const done = () => { videoEl.removeEventListener('seeked', done); resolve(); };
+        videoEl.addEventListener('seeked', done);
+        videoEl.currentTime = 0;
+        setTimeout(done, 800);
+      });
+
+      renderFacecamFrame();
+      const canvasStream = canvas.captureStream(30);
+      const tracks = [...canvasStream.getVideoTracks()];
+      if (audioDest && audioDest.stream) audioDest.stream.getAudioTracks().forEach(t => tracks.push(t));
+      const combined = new MediaStream(tracks);
+      const chunks = [];
+      const bitrate = state.videoQuality >= 1080 ? 6000000 : 3500000;
+
+      try { activeRecorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: bitrate }); }
+      catch (_) { activeRecorder = new MediaRecorder(combined); }
+
+      activeRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      activeRecorder.onstop = async () => {
+        isRecording = false;
+        videoEl.loop = prevLoop;
+        if (monitorGainNode) monitorGainNode.gain.value = userMuted ? 0 : 1;
+        else videoEl.muted = userMuted;
+        box.classList.add('hidden'); mainBtn.disabled = false;
+        document.getElementById('btn-v-play').textContent = 'Oynat';
+        if (!recordCancelled && chunks.length > 0) {
+          const isMp4 = (activeRecorder.mimeType || mime).includes('mp4');
+          const outBlob = new Blob(chunks, { type: isMp4 ? 'video/mp4' : 'video/webm' });
+          await shareOrDownloadBlob(outBlob, `vicecityiv_facecam_${Date.now()}.${isMp4 ? 'mp4' : 'webm'}`);
+        }
+        activeRecorder = null;
+      };
+
+      const onEnd = () => {
+        videoEl.removeEventListener('ended', onEnd);
+        if (activeRecorder && activeRecorder.state !== 'inactive') activeRecorder.stop();
+      };
+      videoEl.addEventListener('ended', onEnd);
+
+      activeRecorder.start(250);
+      try { await videoEl.play(); }
+      catch (err) {
+        recordCancelled = true;
+        if (activeRecorder && activeRecorder.state !== 'inactive') activeRecorder.stop();
+        showVideoError('Video oynatılamadı: ' + err.message);
+        return;
+      }
+
+      const pump = () => {
+        if (!isRecording) return;
+        renderFacecamFrame();
+        if (videoEl.duration > 0) {
+          const pct = clamp(Math.round((videoEl.currentTime / videoEl.duration) * 100), 0, 100);
+          bar.style.width = pct + '%';
+          statusTxt.textContent = `Kaydediliyor... %${pct} (${fmtTime(videoEl.currentTime)} / ${fmtTime(videoEl.duration)})`;
+        }
+        requestAnimationFrame(pump);
+      };
+      requestAnimationFrame(pump);
+    };
+
+    function startDrag(e, boxKey, mode, dir) {
+      e.preventDefault(); e.stopPropagation();
+      const r = getVideoContentRect();
+      if (!r.width || !r.height) return;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+      dragState = { boxKey, mode, dir, sx: e.clientX, sy: e.clientY, rect: r, orig: { ...state[boxKey] } };
+    }
+
+    window.addEventListener('pointermove', e => {
+      if (!dragState) return;
+      const { boxKey, mode, dir, sx, sy, rect, orig } = dragState;
+      const dx = (e.clientX - sx) / rect.width, dy = (e.clientY - sy) / rect.height;
+      const b = { ...orig }, minS = 0.08;
+      if (mode === 'move') {
+        b.x = clamp(orig.x + dx, 0, 1 - orig.w); b.y = clamp(orig.y + dy, 0, 1 - orig.h);
+      } else {
+        if (dir.includes('e')) b.w = clamp(orig.w + dx, minS, 1 - orig.x);
+        if (dir.includes('s')) b.h = clamp(orig.h + dy, minS, 1 - orig.y);
+        if (dir.includes('w')) { const nx = clamp(orig.x + dx, 0, orig.x + orig.w - minS); b.w = orig.x + orig.w - nx; b.x = nx; }
+        if (dir.includes('n')) { const ny = clamp(orig.y + dy, 0, orig.y + orig.h - minS); b.h = orig.y + orig.h - ny; b.y = ny; }
+      }
+      state[boxKey] = b; syncCropBoxes(); renderFacecamFrame();
+    });
+
+    window.addEventListener('pointerup', () => { dragState = null; });
+    window.addEventListener('pointercancel', () => { dragState = null; });
+
+    function compressForStorage(img, maxSide, mime, quality) {
+      const sc = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.naturalWidth * sc));
+      c.height = Math.max(1, Math.round(img.naturalHeight * sc));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL(mime, quality);
+    }
+
+    function readFileAsImage(file, onLoad) {
+      if (!file) return;
+      const fr = new FileReader();
+      fr.onload = ev => {
+        const img = new Image();
+        img.onload = () => onLoad(img, ev.target.result);
+        img.src = ev.target.result;
+      };
+      fr.readAsDataURL(file);
+    }
+
+    function savePrefs() {
+      try {
+        localStorage.setItem(KEYS.prefs, JSON.stringify({
+          username: state.username, badgeSub: state.badgeSub,
+          footerNote: state.footerNote, footerSub: state.footerSub
+        }));
+      } catch (_) {}
+    }
+
+    function loadStoredAssets() {
+      try {
+        const p = JSON.parse(localStorage.getItem(KEYS.prefs) || 'null');
+        if (p) {
+          if (p.username) { state.username = p.username; document.getElementById('inp-username').value = p.username; }
+          if (p.badgeSub) { state.badgeSub = p.badgeSub; document.getElementById('inp-badge-sub').value = p.badgeSub; }
+          if (p.footerNote) { state.footerNote = p.footerNote; document.getElementById('inp-ft-note').value = p.footerNote; }
+          if (p.footerSub) { state.footerSub = p.footerSub; document.getElementById('inp-ft-sub').value = p.footerSub; }
+        }
+      } catch (_) {}
+      const loadKey = (key, prop, badgeId) => {
+        const data = localStorage.getItem(key);
+        if (!data) return;
+        const img = new Image();
+        img.onload = () => { state[prop] = img; document.getElementById(badgeId).textContent = 'Kayıtlı ✓'; renderCanvas(); };
+        img.src = data;
+      };
+      loadKey(KEYS.defBg, 'defaultBgImg', 'badge-def-bg');
+      loadKey(KEYS.topLogo, 'topLogoImg', 'badge-top-logo');
+      loadKey(KEYS.avatar, 'avatarImg', 'badge-avatar');
+    }
+
+    window.clearSavedAssets = function() {
+      [KEYS.defBg, KEYS.topLogo, KEYS.avatar].forEach(k => localStorage.removeItem(k));
+      state.defaultBgImg = null; state.topLogoImg = null; state.avatarImg = null;
+      document.getElementById('badge-def-bg').textContent = 'Kayıtlı değil';
+      document.getElementById('badge-top-logo').textContent = 'Vektör';
+      document.getElementById('badge-avatar').textContent = 'Varsayılan';
+      renderCanvas();
+    };
+
+    function applyUrlParams() {
+      const q = new URLSearchParams(window.location.search);
+      const mod = q.get('mod'), metin = q.get('metin'), baslik = q.get('baslik');
+      const maddeler = q.get('maddeler'), tarih = q.get('tarih'), alt = q.get('alt'), etiket = q.get('etiket');
+      if (['tek', 'madde', 'kapak', 'foto', 'facecam'].includes(mod)) state.mode = mod;
+      if (metin) { state.mode = 'tek'; state.tekSentence = metin; document.getElementById('inp-tek-sentence').value = metin; }
+      if (tarih !== null && q.has('tarih')) { state.mode = 'kapak'; state.kapakDate = tarih; document.getElementById('inp-k-date').value = tarih; }
+      if (baslik && state.mode === 'kapak') { state.kapakHead = baslik; document.getElementById('inp-k-head').value = baslik; }
+      else if (baslik) { state.mode = 'madde'; state.maddeHead = baslik; document.getElementById('inp-madde-head').value = baslik; }
+      if (maddeler) {
+        state.mode = 'madde';
+        const arr = maddeler.split(/\r?\n|\|/).map(s => s.trim()).filter(Boolean);
+        state.maddeLines = arr; document.getElementById('inp-madde-lines').value = arr.join('\n');
+      }
+      if (alt !== null && q.has('alt')) { state.kapakSub = alt; document.getElementById('inp-k-sub').value = alt; }
+      if (etiket) { state.kapakBoxTag = etiket; document.getElementById('inp-k-tag').value = etiket; }
+    }
+
+    function previewLoop() {
+      if (state.mode === 'facecam' && state.videoLoaded && !isRecording && !videoEl.paused && !videoEl.ended) {
+        renderFacecamFrame();
+        if (videoEl.duration > 0) {
+          document.getElementById('sld-v-seek').value = Math.round((videoEl.currentTime / videoEl.duration) * 1000);
+          document.getElementById('lbl-v-time').textContent = fmtTime(videoEl.currentTime);
+        }
+      }
+      requestAnimationFrame(previewLoop);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inp-k-date').value = state.kapakDate;
+      loadStoredAssets();
+      applyUrlParams();
+
+      document.getElementById('inp-tek-sentence').addEventListener('input', e => { state.tekSentence = e.target.value; updateCaption(); renderCanvas(); });
+      document.getElementById('sld-tek-size').addEventListener('input', e => { state.tekSize = parseInt(e.target.value, 10); document.getElementById('val-tek-size').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-tek-y').addEventListener('input', e => { state.tekPosY = parseInt(e.target.value, 10) / 100; document.getElementById('val-tek-y').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sel-tek-align').addEventListener('change', e => { state.tekAlign = e.target.value; renderCanvas(); });
+      document.getElementById('sld-tek-vig').addEventListener('input', e => { state.tekVignette = parseInt(e.target.value, 10) / 100; document.getElementById('val-tek-vig').textContent = e.target.value; renderCanvas(); });
+
+      document.getElementById('inp-madde-head').addEventListener('input', e => { state.maddeHead = e.target.value; updateCaption(); renderCanvas(); });
+      document.getElementById('inp-madde-lines').addEventListener('input', e => { state.maddeLines = e.target.value.split('\n').map(s => s.trim()).filter(Boolean); updateCaption(); renderCanvas(); });
+      document.getElementById('sld-m-head').addEventListener('input', e => { state.maddeHeadSize = parseInt(e.target.value, 10); document.getElementById('val-m-head').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-m-body').addEventListener('input', e => { state.maddeBodySize = parseInt(e.target.value, 10); document.getElementById('val-m-body').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-m-vig').addEventListener('input', e => { state.maddeVignette = parseInt(e.target.value, 10) / 100; document.getElementById('val-m-vig').textContent = e.target.value; renderCanvas(); });
+
+      document.getElementById('inp-k-date').addEventListener('input', e => { state.kapakDate = e.target.value; updateCaption(); renderCanvas(); });
+      document.getElementById('inp-k-head').addEventListener('input', e => { state.kapakHead = e.target.value; updateCaption(); renderCanvas(); });
+      document.getElementById('inp-k-sub').addEventListener('input', e => { state.kapakSub = e.target.value; updateCaption(); renderCanvas(); });
+      document.getElementById('inp-k-swipe').addEventListener('input', e => { state.kapakSwipe = e.target.value; renderCanvas(); });
+      document.getElementById('inp-k-t1').addEventListener('input', e => { state.kapakT1 = e.target.value; renderCanvas(); });
+      document.getElementById('inp-k-t2').addEventListener('input', e => { state.kapakT2 = e.target.value; renderCanvas(); });
+      document.getElementById('inp-k-pill').addEventListener('input', e => { state.kapakPill = e.target.value; renderCanvas(); });
+      document.getElementById('inp-k-tag').addEventListener('input', e => { state.kapakBoxTag = e.target.value; renderCanvas(); });
+      document.getElementById('sld-k-date').addEventListener('input', e => { state.kapakDateSize = parseInt(e.target.value, 10); document.getElementById('val-k-date').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-k-head').addEventListener('input', e => { state.kapakHeadSize = parseInt(e.target.value, 10); document.getElementById('val-k-head').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-k-boxy').addEventListener('input', e => { state.kapakBoxPosY = parseInt(e.target.value, 10) / 100; renderCanvas(); });
+      document.getElementById('sld-k-boxop').addEventListener('input', e => { state.kapakBoxOpacity = parseInt(e.target.value, 10) / 100; renderCanvas(); });
+
+      document.getElementById('sld-ft-h').addEventListener('input', e => { state.footerH = parseInt(e.target.value, 10); document.getElementById('val-ft-h').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-ft-pad').addEventListener('input', e => { state.footerPad = parseInt(e.target.value, 10); document.getElementById('val-ft-pad').textContent = e.target.value; renderCanvas(); });
+
+      document.getElementById('sld-bg-op').addEventListener('input', e => { state.bgOpacity = parseInt(e.target.value, 10) / 100; renderCanvas(); });
+      document.getElementById('sld-bg-zoom').addEventListener('input', e => { state.bgZoom = parseInt(e.target.value, 10) / 100; renderCanvas(); });
+      document.getElementById('sld-bg-y').addEventListener('input', e => { state.bgPosY = parseInt(e.target.value, 10) / 100; renderCanvas(); });
+      document.getElementById('sld-bg-x').addEventListener('input', e => { state.bgPosX = parseInt(e.target.value, 10) / 100; renderCanvas(); });
+
+      document.getElementById('sel-v-format').addEventListener('change', e => { state.videoFormat = e.target.value; renderCanvas(); });
+      document.getElementById('sel-v-qual').addEventListener('change', e => { state.videoQuality = parseInt(e.target.value, 10); renderCanvas(); });
+      document.getElementById('sld-v-ratio').addEventListener('input', e => { state.videoFcRatio = parseInt(e.target.value, 10) / 100; document.getElementById('val-v-ratio').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-v-blur').addEventListener('input', e => { state.videoBlur = parseInt(e.target.value, 10); document.getElementById('val-v-blur').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('chk-v-div').addEventListener('change', e => { state.videoDivOn = e.target.checked; renderCanvas(); });
+      document.getElementById('sld-v-div').addEventListener('input', e => { state.videoDivH = parseInt(e.target.value, 10); document.getElementById('val-v-div').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('chk-v-ft').addEventListener('change', e => { state.videoFtOn = e.target.checked; renderCanvas(); });
+      document.getElementById('sld-v-ft').addEventListener('input', e => { state.videoFtH = parseInt(e.target.value, 10); document.getElementById('val-v-ft').textContent = e.target.value; renderCanvas(); });
+
+      document.getElementById('inp-video-file').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        showVideoError('');
+        if (state.videoUrl) URL.revokeObjectURL(state.videoUrl);
+        state.videoUrl = URL.createObjectURL(file);
+        videoEl.src = state.videoUrl;
+        videoEl.load();
+        document.getElementById('video-empty-hint').classList.add('hidden');
+        videoEl.classList.remove('hidden');
+        document.getElementById('v-controls').classList.remove('hidden');
+        e.target.value = '';
+      });
+
+      videoEl.addEventListener('loadedmetadata', () => { state.videoLoaded = true; syncCropBoxes(); renderCanvas(); });
+      videoEl.addEventListener('loadeddata', () => { syncCropBoxes(); renderCanvas(); });
+      videoEl.addEventListener('seeked', () => renderCanvas());
+      window.addEventListener('resize', () => syncCropBoxes());
+
+      document.getElementById('btn-v-play').addEventListener('click', () => {
+        if (videoEl.paused) {
+          if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+          videoEl.play().catch(() => {});
+          document.getElementById('btn-v-play').textContent = 'Duraklat';
+        } else {
+          videoEl.pause();
+          document.getElementById('btn-v-play').textContent = 'Oynat';
+        }
+      });
+      document.getElementById('btn-v-mute').addEventListener('click', () => {
+        userMuted = !userMuted;
+        if (monitorGainNode) monitorGainNode.gain.value = userMuted ? 0 : 1;
+        else videoEl.muted = userMuted;
+        document.getElementById('btn-v-mute').textContent = userMuted ? 'Sessiz' : 'Ses';
+      });
+      document.getElementById('sld-v-seek').addEventListener('input', e => {
+        if (videoEl.duration > 0) {
+          videoEl.currentTime = (parseInt(e.target.value, 10) / 1000) * videoEl.duration;
+          document.getElementById('lbl-v-time').textContent = fmtTime(videoEl.currentTime);
+        }
+      });
+
+      fcBoxEl.addEventListener('pointerdown', e => { if (!e.target.dataset.dir) startDrag(e, 'fc', 'move', ''); });
+      gpBoxEl.addEventListener('pointerdown', e => { if (!e.target.dataset.dir) startDrag(e, 'gp', 'move', ''); });
+      document.querySelectorAll('.r-handle').forEach(h => {
+        h.addEventListener('pointerdown', e => startDrag(e, h.dataset.box, 'resize', h.dataset.dir));
+      });
+
+      const bindPref = (id, key) => {
+        document.getElementById(id).addEventListener('input', e => { state[key] = e.target.value; savePrefs(); updateCaption(); renderCanvas(); });
+      };
+      bindPref('inp-ft-note', 'footerNote');
+      bindPref('inp-ft-sub', 'footerSub');
+      bindPref('inp-username', 'username');
+      bindPref('inp-badge-sub', 'badgeSub');
+
+      document.getElementById('inp-bg-custom').addEventListener('change', e => {
+        readFileAsImage(e.target.files[0], img => { state.customBgImg = img; renderCanvas(); });
+        e.target.value = '';
+      });
+      document.getElementById('inp-photo-file').addEventListener('change', e => {
+        readFileAsImage(e.target.files[0], img => { state.photoImg = img; renderCanvas(); });
+        e.target.value = '';
+      });
+
+      document.getElementById('inp-def-bg').addEventListener('change', e => {
+        readFileAsImage(e.target.files[0], img => {
+          state.defaultBgImg = img;
+          try { localStorage.setItem(KEYS.defBg, compressForStorage(img, 1400, 'image/jpeg', 0.85)); } catch (_) {}
+          document.getElementById('badge-def-bg').textContent = 'Kayıtlı ✓';
+          renderCanvas();
+        });
+        e.target.value = '';
+      });
+      document.getElementById('inp-top-logo').addEventListener('change', e => {
+        readFileAsImage(e.target.files[0], img => {
+          state.topLogoImg = img;
+          try { localStorage.setItem(KEYS.topLogo, compressForStorage(img, 600, 'image/png', 1.0)); } catch (_) {}
+          document.getElementById('badge-top-logo').textContent = 'Kayıtlı ✓';
+          renderCanvas();
+        });
+        e.target.value = '';
+      });
+      document.getElementById('inp-avatar').addEventListener('change', e => {
+        readFileAsImage(e.target.files[0], img => {
+          state.avatarImg = img;
+          try { localStorage.setItem(KEYS.avatar, compressForStorage(img, 400, 'image/jpeg', 0.9)); } catch (_) {}
+          document.getElementById('badge-avatar').textContent = 'Kayıtlı ✓';
+          renderCanvas();
+        });
+        e.target.value = '';
+      });
+
+      syncUI();
+      if (document.fonts) document.fonts.ready.then(() => renderCanvas());
+      requestAnimationFrame(previewLoop);
+    });
+  </script>
+</body>
+</html>
