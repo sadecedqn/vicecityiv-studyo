@@ -18,6 +18,7 @@
     .font-preload { position:absolute; left:-9999px; visibility:hidden; }
     .stage { position:relative; width:100%; max-width:440px; margin:0 auto; border-radius:16px; overflow:hidden; background:#0d031a; box-shadow:0 20px 60px -10px rgba(195,0,255,.45),0 0 0 1px rgba(255,255,255,.14); }
     #studio-canvas { width:100%; height:auto; display:block; }
+    #reels-grid-guide { position:absolute; inset:0; pointer-events:none; z-index:25; }
     .video-stage { position:relative; width:100%; background:#080111; border-radius:14px; overflow:hidden; border:1px solid rgba(168,85,247,.45); user-select:none; }
     #src-video { width:100%; height:auto; max-height:360px; display:block; object-fit:contain; background:#05010a; }
     #crop-overlay { position:absolute; inset:0; pointer-events:none; }
@@ -39,7 +40,7 @@
 <body class="min-h-screen flex flex-col items-center">
 
   <div class="font-preload">
-    <span style="font-family:'Outfit';font-weight:900;">GTA 6 21.11.2026 GÜNÜN HABERLERİ</span>
+    <span style="font-family:'Outfit';font-weight:900;">GTA 6 21.11.2026 GÜNÜN HABERLERİ DİKKAT SPOİLER İÇERİR!!!</span>
     <span style="font-family:'Montserrat';font-weight:500;">@vice.cityiv</span>
     <span style="font-family:'Montserrat';font-weight:900;">grand theft auto</span>
   </div>
@@ -51,9 +52,10 @@
           <span class="w-2.5 h-2.5 rounded-full bg-pink-400"></span>
           <span class="text-xs sm:text-sm font-black tracking-wide text-white">VICE.CITYIV • MOBİL STÜDYO</span>
         </div>
-        <div class="flex items-center gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
           <button type="button" id="btn-main-export" onclick="window.handleMainExport()" class="bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 active:scale-95 text-white text-xs font-black px-3.5 py-2 rounded-xl border border-pink-400/50 shadow-lg cursor-pointer">KAYDET / PAYLAŞ</button>
-          <button type="button" id="btn-png-export" onclick="window.exportImage('png', false)" class="bg-purple-900 active:scale-95 text-purple-100 text-xs font-extrabold px-3 py-2 rounded-xl border border-purple-400/40 cursor-pointer">PNG</button>
+          <button type="button" id="btn-reels-export" onclick="window.exportReelsCover('jpg', true)" class="bg-gradient-to-r from-amber-500 via-orange-500 to-pink-600 active:scale-95 text-white text-xs font-black px-3 py-2 rounded-xl border border-amber-300/60 shadow-lg cursor-pointer">REELS KAPAK</button>
+          <button type="button" id="btn-png-export" onclick="window.handlePngExport()" class="bg-purple-900 active:scale-95 text-purple-100 text-xs font-extrabold px-3 py-2 rounded-xl border border-purple-400/40 cursor-pointer">PNG</button>
         </div>
       </div>
 
@@ -70,8 +72,25 @@
       <div class="lg:col-span-5 lg:order-2 flex flex-col items-center gap-2 lg:sticky lg:top-3">
         <div class="stage" id="drop-zone">
           <canvas id="studio-canvas" width="2160" height="2700"></canvas>
+          <div id="reels-grid-guide" class="hidden">
+            <div class="absolute inset-x-0 top-0 h-[12.5%] bg-black/45 border-b-2 border-dashed border-amber-400/90 flex items-end justify-end p-1.5">
+              <span class="bg-black/75 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded">9:16 Üst Taşma</span>
+            </div>
+            <div class="absolute inset-x-0 top-[12.5%] bottom-[12.5%] flex items-start justify-start p-1.5">
+              <span class="bg-amber-500/90 text-black text-[9px] font-black px-1.5 py-0.5 rounded shadow">Instagram Izgarası (3:4)</span>
+            </div>
+            <div class="absolute inset-x-0 bottom-0 h-[12.5%] bg-black/45 border-t-2 border-dashed border-amber-400/90 flex items-start justify-end p-1.5">
+              <span class="bg-black/75 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded">9:16 Alt Taşma</span>
+            </div>
+          </div>
         </div>
-        <span id="res-info" class="text-[11px] font-mono text-cyan-300">2160×2700 • 4:5</span>
+        <div class="w-full max-w-[440px] flex flex-wrap items-center justify-between gap-2 px-1">
+          <span id="res-info" class="text-[11px] font-mono text-cyan-300">2160×2700 • 4:5</span>
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="btn-reels-preview" onclick="window.toggleReelsPreview()" class="bg-[#150529] text-amber-300 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg border border-amber-500/40 cursor-pointer">Reels Kapak Önizle</button>
+            <button type="button" id="btn-reels-guide" onclick="window.toggleReelsGuide()" class="hidden bg-[#150529] text-cyan-300 text-[10px] font-extrabold px-2 py-1.5 rounded-lg border border-cyan-500/40 cursor-pointer">Izgara: Açık</button>
+          </div>
+        </div>
       </div>
 
       <div class="lg:col-span-7 lg:order-1 flex flex-col gap-3">
@@ -322,6 +341,60 @@
             <p id="v-error-msg" class="hidden text-[11px] text-rose-300 font-bold"></p>
           </div>
 
+          <div id="panel-spoiler-controls" class="flex flex-col gap-2 pt-2.5 border-t border-purple-500/25">
+            <div class="flex items-center justify-between gap-2 bg-amber-950/35 border border-amber-500/40 rounded-xl px-3 py-2">
+              <div class="flex items-center gap-2">
+                <span class="text-base leading-none">⚠️</span>
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-black text-amber-300 tracking-wide">DİKKAT SPOİLER İÇERİR İBARESİ</span>
+                  <span class="text-[10px] text-purple-200/80">Tüm modlarda eklenip kaldırılabilir</span>
+                </div>
+              </div>
+              <button type="button" id="btn-toggle-spoiler" onclick="window.toggleSpoiler()" class="bg-[#0b0217] text-amber-200 text-[11px] font-black px-3 py-1.5 rounded-xl border border-amber-500/50 cursor-pointer shrink-0">EKLE (Kapalı)</button>
+            </div>
+
+            <div id="spoiler-options" class="hidden flex flex-col gap-2 bg-[#0b0217] border border-amber-500/35 rounded-xl p-2.5">
+              <div class="grid grid-cols-2 gap-1.5 text-[10px] sm:text-[11px] font-black">
+                <button type="button" id="btn-sp-badge" onclick="window.setSpoilerStyle('badge')" class="bg-amber-500 text-black py-1.5 px-2 rounded-lg border border-amber-300 cursor-pointer">Şerit Rozet</button>
+                <button type="button" id="btn-sp-cover" onclick="window.setSpoilerStyle('cover')" class="bg-[#150529] text-purple-200 py-1.5 px-2 rounded-lg border border-purple-500/40 cursor-pointer">Tam Orta Uyarı</button>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-amber-300 font-bold">İkon Tipi</label>
+                  <select id="sel-sp-icon" class="w-full mt-0.5 bg-[#150529] border border-purple-500/40 rounded-lg px-2 py-1.5 text-white font-bold">
+                    <option value="triangle" selected>⚠ Üçgen Uyarı (!)</option>
+                    <option value="eye">⊘ Gizli Göz (Spoiler)</option>
+                  </select>
+                </div>
+                <div id="wrap-sp-pos">
+                  <label class="text-[10px] text-pink-300 font-bold">Konum</label>
+                  <select id="sel-sp-pos" class="w-full mt-0.5 bg-[#150529] border border-purple-500/40 rounded-lg px-2 py-1.5 text-white font-bold">
+                    <option value="top-left" selected>Üst Sol</option>
+                    <option value="top-center">Üst Orta</option>
+                    <option value="center">Tam Orta</option>
+                    <option value="bottom">Alt (Footer Üstü)</option>
+                  </select>
+                </div>
+                <div id="wrap-sp-dim" class="hidden">
+                  <label class="text-[10px] text-purple-300 font-bold">Arka Karartma (<span id="val-sp-dim">62</span>%)</label>
+                  <input type="range" id="sld-sp-dim" min="0" max="92" value="62" class="w-full mt-1.5 accent-purple-400">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
+                <div>
+                  <label class="text-[10px] text-amber-300 font-bold">Uyarı Metni:</label>
+                  <input type="text" id="inp-sp-text" value="DİKKAT SPOİLER İÇERİR!!!" class="w-full mt-0.5 bg-[#150529] border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-amber-200 font-black">
+                </div>
+                <div>
+                  <label class="text-[10px] text-cyan-300 font-bold">Boyut (<span id="val-sp-scale">100</span>%)</label>
+                  <input type="range" id="sld-sp-scale" min="65" max="140" value="100" class="w-full mt-1.5 accent-cyan-400">
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div id="panel-bg-controls" class="flex flex-col gap-2 pt-2 border-t border-purple-500/20">
             <div class="grid grid-cols-2 gap-2">
               <label class="cursor-pointer bg-amber-700/80 text-white font-bold py-2 px-3 rounded-xl text-center border border-amber-400/40">
@@ -412,6 +485,8 @@
     const gpBoxEl = document.getElementById('box-gp');
     const blurCanvas = document.createElement('canvas');
     const blurCtx = blurCanvas.getContext('2d');
+    const blurCanvas2 = document.createElement('canvas');
+    const blurCtx2 = blurCanvas2.getContext('2d');
 
     const KEYS = {
       defBg: 'vc_mob_def_bg_v1',
@@ -428,6 +503,15 @@
 
     const state = {
       mode: 'tek',
+      previewReelsCover: false,
+      showReelsGuide: true,
+      spoilerOn: false,
+      spoilerStyle: 'badge',
+      spoilerIcon: 'triangle',
+      spoilerPos: 'top-left',
+      spoilerText: 'DİKKAT SPOİLER İÇERİR!!!',
+      spoilerScale: 1.0,
+      spoilerDim: 0.62,
       username: 'vice.cityiv',
       badgeSub: 'VICE CITY • KLİPLER & EDİTLER',
       footerNote: 'GTA 6 haberleri, klipler ve editler • @vice.cityiv',
@@ -504,11 +588,12 @@
     }
 
     function drawRR(c, x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
       c.beginPath();
-      c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
-      c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
-      c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+      c.moveTo(x + rr, y); c.lineTo(x + w - rr, y); c.quadraticCurveTo(x + w, y, x + w, y + rr);
+      c.lineTo(x + w, y + h - rr); c.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      c.lineTo(x + rr, y + h); c.quadraticCurveTo(x, y + h, x, y + h - rr);
+      c.lineTo(x, y + rr); c.quadraticCurveTo(x, y, x + rr, y);
       c.closePath();
     }
 
@@ -645,6 +730,285 @@
       c.restore();
     }
 
+    function drawSpoilerTriangle(c, cx, cy, size) {
+      c.save();
+      const glow = c.createRadialGradient(cx, cy, size * 0.08, cx, cy, size * 0.8);
+      glow.addColorStop(0, 'rgba(255, 196, 0, 0.34)');
+      glow.addColorStop(0.5, 'rgba(255, 0, 127, 0.20)');
+      glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      c.fillStyle = glow;
+      c.beginPath(); c.arc(cx, cy, size * 0.8, 0, Math.PI * 2); c.fill();
+
+      const topY = cy - size * 0.43, botY = cy + size * 0.39, halfW = size * 0.48, r = size * 0.095;
+      const p1 = { x: cx, y: topY }, p2 = { x: cx + halfW, y: botY }, p3 = { x: cx - halfW, y: botY };
+      c.beginPath();
+      c.moveTo((p1.x + p3.x) / 2, (p1.y + p3.y) / 2);
+      c.arcTo(p1.x, p1.y, p2.x, p2.y, r);
+      c.arcTo(p2.x, p2.y, p3.x, p3.y, r);
+      c.arcTo(p3.x, p3.y, p1.x, p1.y, r);
+      c.closePath();
+
+      const innerFill = c.createLinearGradient(cx, topY, cx, botY);
+      innerFill.addColorStop(0, 'rgba(42, 10, 68, 0.94)');
+      innerFill.addColorStop(1, 'rgba(20, 4, 38, 0.97)');
+      c.fillStyle = innerFill;
+      c.shadowColor = 'rgba(255, 0, 127, 0.65)';
+      c.shadowBlur = Math.max(8, size * 0.16);
+      c.fill();
+
+      const strokeGrad = c.createLinearGradient(cx - halfW, topY, cx + halfW, botY);
+      strokeGrad.addColorStop(0, '#ffe066');
+      strokeGrad.addColorStop(0.4, '#ffc400');
+      strokeGrad.addColorStop(0.75, '#ff2a85');
+      strokeGrad.addColorStop(1, '#d946ef');
+      c.lineWidth = Math.max(2.6, size * 0.085);
+      c.lineJoin = 'round';
+      c.strokeStyle = strokeGrad;
+      c.stroke();
+
+      const exGrad = c.createLinearGradient(cx, cy - size * 0.16, cx, cy + size * 0.28);
+      exGrad.addColorStop(0, '#fff7cc');
+      exGrad.addColorStop(0.55, '#ffc400');
+      exGrad.addColorStop(1, '#ff6d00');
+      c.shadowColor = 'rgba(255, 196, 0, 0.85)';
+      c.shadowBlur = Math.max(6, size * 0.09);
+      c.fillStyle = exGrad;
+
+      const barW = Math.max(2.6, size * 0.095), barH = size * 0.28, barY = cy - size * 0.17;
+      drawRR(c, cx - barW / 2, barY, barW, barH, barW / 2);
+      c.fill();
+      const dotR = barW * 0.56;
+      c.beginPath(); c.arc(cx, barY + barH + dotR * 1.85, dotR, 0, Math.PI * 2); c.fill();
+      c.restore();
+    }
+
+    function drawSpoilerEye(c, cx, cy, size) {
+      c.save();
+      const glow = c.createRadialGradient(cx, cy, size * 0.08, cx, cy, size * 0.8);
+      glow.addColorStop(0, 'rgba(255, 0, 127, 0.34)');
+      glow.addColorStop(0.5, 'rgba(255, 196, 0, 0.20)');
+      glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      c.fillStyle = glow;
+      c.beginPath(); c.arc(cx, cy, size * 0.8, 0, Math.PI * 2); c.fill();
+
+      const rx = size * 0.48, ry = size * 0.44, sw = Math.max(2.4, size * 0.078);
+      const mainGrad = c.createLinearGradient(cx - rx, cy - ry, cx + rx, cy + ry);
+      mainGrad.addColorStop(0, '#ffe066');
+      mainGrad.addColorStop(0.45, '#ffc400');
+      mainGrad.addColorStop(0.78, '#ff2a85');
+      mainGrad.addColorStop(1, '#c026d3');
+
+      c.beginPath();
+      c.moveTo(cx - rx, cy);
+      c.quadraticCurveTo(cx, cy - ry * 1.45, cx + rx, cy);
+      c.quadraticCurveTo(cx, cy + ry * 1.45, cx - rx, cy);
+      c.closePath();
+      c.fillStyle = 'rgba(20, 4, 38, 0.92)';
+      c.shadowColor = 'rgba(255, 0, 127, 0.65)';
+      c.shadowBlur = Math.max(8, size * 0.14);
+      c.fill();
+      c.lineWidth = sw; c.lineJoin = 'round'; c.strokeStyle = mainGrad; c.stroke();
+
+      const irisR = size * 0.16;
+      c.beginPath(); c.arc(cx, cy, irisR, 0, Math.PI * 2);
+      c.lineWidth = sw * 0.85; c.strokeStyle = '#ffc425'; c.stroke();
+      c.beginPath(); c.arc(cx, cy, irisR * 0.45, 0, Math.PI * 2);
+      c.fillStyle = '#ffffff'; c.fill();
+
+      const sx = size * 0.40, sy = size * 0.36;
+      c.lineCap = 'round'; c.shadowBlur = 0;
+      c.strokeStyle = '#120324'; c.lineWidth = sw * 2.0;
+      c.beginPath(); c.moveTo(cx - sx, cy - sy); c.lineTo(cx + sx, cy + sy); c.stroke();
+      c.shadowColor = 'rgba(255, 196, 0, 0.85)'; c.shadowBlur = Math.max(6, size * 0.08);
+      c.strokeStyle = mainGrad; c.lineWidth = sw * 1.05;
+      c.beginPath(); c.moveTo(cx - sx, cy - sy); c.lineTo(cx + sx, cy + sy); c.stroke();
+      c.restore();
+    }
+
+    function drawSpoilerOverlay(c, W, fullH, safeTop, safeH, footerH, avoidTopRightLogo) {
+      if (!state.spoilerOn) return;
+      const rawText = (state.spoilerText || 'DİKKAT SPOİLER İÇERİR!!!').trim().toLocaleUpperCase('tr-TR');
+      if (!rawText) return;
+      const baseScale = W / 1080;
+      const s = baseScale * state.spoilerScale;
+      const usableH = Math.max(120, safeH - footerH);
+
+      if (state.spoilerStyle === 'cover') {
+        c.save();
+        if (state.spoilerDim > 0.01) {
+          c.fillStyle = `rgba(8, 1, 18, ${state.spoilerDim.toFixed(2)})`;
+          c.fillRect(0, 0, W, Math.max(0, safeTop + usableH));
+        }
+
+        const boxW = Math.round(W - 92 * baseScale);
+        const maxTextW = Math.round(boxW - 84 * baseScale);
+        let styledRaw = rawText;
+        if (!styledRaw.includes('*') && /^DİKKAT\s+/.test(styledRaw)) {
+          styledRaw = styledRaw.replace(/^DİKKAT\s+/, 'DİKKAT\n*') + '*';
+        }
+
+        const iconSize = Math.round(176 * s);
+        const iconGap = Math.round(32 * s);
+        let fSize = Math.round(78 * s);
+        let lineH = Math.round(fSize * 1.2);
+        let lines = [];
+
+        const buildCoverLines = (txt, mw) => {
+          const out = [];
+          txt.split(/\r?\n/).forEach(part => {
+            out.push(...parseStyledLines(c, part, mw));
+          });
+          return out;
+        };
+
+        while (fSize >= Math.round(28 * baseScale)) {
+          c.font = `900 ${fSize}px "Montserrat","Outfit",sans-serif`;
+          lineH = Math.round(fSize * 1.2);
+          lines = buildCoverLines(styledRaw, maxTextW);
+          if (iconSize + iconGap + lines.length * lineH <= usableH - Math.round(140 * baseScale)) break;
+          fSize -= 3;
+        }
+
+        const contentH = iconSize + iconGap + lines.length * lineH;
+        const cardH = Math.min(usableH - Math.round(48 * baseScale), Math.max(contentH + Math.round(112 * s), Math.round(360 * baseScale)));
+        const cardX = Math.round((W - boxW) / 2);
+        const cardY = Math.round(safeTop + (usableH - cardH) / 2);
+
+        drawRR(c, cardX, cardY, boxW, cardH, Math.round(28 * baseScale));
+        const cg = c.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
+        cg.addColorStop(0, 'rgba(26, 6, 52, 0.90)');
+        cg.addColorStop(0.55, 'rgba(17, 4, 36, 0.94)');
+        cg.addColorStop(1, 'rgba(10, 2, 24, 0.96)');
+        c.fillStyle = cg;
+        c.shadowColor = 'rgba(0, 0, 0, 0.78)';
+        c.shadowBlur = Math.round(36 * baseScale);
+        c.fill();
+        c.shadowBlur = 0;
+
+        c.save();
+        drawRR(c, cardX, cardY, boxW, cardH, Math.round(28 * baseScale));
+        c.clip();
+        const topBar = c.createLinearGradient(cardX, cardY, cardX + boxW, cardY);
+        topBar.addColorStop(0, '#ffc400'); topBar.addColorStop(0.4, '#ff1e56'); topBar.addColorStop(0.75, '#a855f7'); topBar.addColorStop(1, '#00e5ff');
+        c.fillStyle = topBar;
+        c.fillRect(cardX, cardY, boxW, Math.max(4, Math.round(7 * baseScale)));
+        c.restore();
+
+        drawRR(c, cardX, cardY, boxW, cardH, Math.round(28 * baseScale));
+        const bGrad = c.createLinearGradient(cardX, cardY, cardX + boxW, cardY + cardH);
+        bGrad.addColorStop(0, 'rgba(255,196,37,0.92)');
+        bGrad.addColorStop(0.5, 'rgba(255,30,100,0.85)');
+        bGrad.addColorStop(1, 'rgba(168,85,247,0.82)');
+        c.lineWidth = Math.max(2, 2.8 * baseScale);
+        c.strokeStyle = bGrad;
+        c.stroke();
+
+        let curY = cardY + Math.round((cardH - contentH) / 2);
+        const iconCY = curY + iconSize / 2;
+        if (state.spoilerIcon === 'eye') drawSpoilerEye(c, W / 2, iconCY, iconSize);
+        else drawSpoilerTriangle(c, W / 2, iconCY, iconSize);
+
+        curY += iconSize + iconGap;
+        c.font = `900 ${fSize}px "Montserrat","Outfit",sans-serif`;
+        c.textBaseline = 'top';
+        c.textAlign = 'left';
+        const spW = c.measureText(' ').width;
+        const strokeW = Math.max(1.4, fSize * 0.036);
+        lines.forEach(ln => {
+          let dx = (W - ln.width) / 2;
+          ln.tokens.forEach((tok, idx) => {
+            drawShadowedToken(c, tok.text, dx, curY, tok.hl ? '#ffc425' : '#ffffff', strokeW);
+            dx += c.measureText(tok.text).width + (idx < ln.tokens.length - 1 ? spW : 0);
+          });
+          curY += lineH;
+        });
+
+        c.restore();
+        return;
+      }
+
+      // Şerit Rozet Stili
+      c.save();
+      const padX = Math.round(44 * baseScale);
+      const maxBadgeW = (state.spoilerPos === 'top-left' && avoidTopRightLogo)
+        ? Math.round(W - padX * 2 - 200 * baseScale)
+        : Math.round(W - padX * 2);
+
+      let fSize = Math.round(23 * s);
+      let iconSize = Math.round(36 * s);
+      let hPad = Math.round(20 * s);
+      let gap = Math.round(12 * s);
+      let textW = 0;
+      let pillW = 0;
+
+      while (fSize >= Math.round(11 * baseScale)) {
+        c.font = `900 ${fSize}px "Montserrat","Outfit",sans-serif`;
+        textW = c.measureText(rawText).width;
+        pillW = hPad * 2 + iconSize + gap + textW;
+        if (pillW <= maxBadgeW) break;
+        fSize -= 1;
+        iconSize = Math.round(fSize * 1.52);
+        hPad = Math.round(fSize * 0.85);
+        gap = Math.round(fSize * 0.5);
+      }
+
+      const pillH = Math.max(Math.round(iconSize + 18 * s), Math.round(52 * s));
+      let bx = padX;
+      let by = safeTop + Math.round(34 * baseScale);
+
+      if (state.spoilerPos === 'top-center') {
+        bx = Math.round((W - pillW) / 2);
+        by = safeTop + Math.round(34 * baseScale);
+      } else if (state.spoilerPos === 'center') {
+        bx = Math.round((W - pillW) / 2);
+        by = Math.round(safeTop + (usableH - pillH) / 2);
+      } else if (state.spoilerPos === 'bottom') {
+        bx = Math.round((W - pillW) / 2);
+        by = Math.round(safeTop + usableH - pillH - 22 * baseScale);
+      }
+
+      drawRR(c, bx, by, pillW, pillH, pillH / 2);
+      const pg = c.createLinearGradient(bx, by, bx + pillW, by + pillH);
+      pg.addColorStop(0, 'rgba(44, 6, 46, 0.94)');
+      pg.addColorStop(0.55, 'rgba(26, 4, 42, 0.95)');
+      pg.addColorStop(1, 'rgba(56, 8, 44, 0.94)');
+      c.fillStyle = pg;
+      c.shadowColor = 'rgba(255, 30, 100, 0.65)';
+      c.shadowBlur = Math.round(22 * baseScale);
+      c.fill();
+      c.shadowBlur = 0;
+
+      const bgBorder = c.createLinearGradient(bx, by, bx + pillW, by);
+      bgBorder.addColorStop(0, '#ffe066');
+      bgBorder.addColorStop(0.45, '#ff2a85');
+      bgBorder.addColorStop(1, '#c026d3');
+      c.lineWidth = Math.max(2, 2.5 * baseScale);
+      c.strokeStyle = bgBorder;
+      c.stroke();
+
+      const icX = bx + hPad + iconSize / 2;
+      const icY = by + pillH / 2;
+      if (state.spoilerIcon === 'eye') drawSpoilerEye(c, icX, icY, iconSize);
+      else drawSpoilerTriangle(c, icX, icY, iconSize);
+
+      c.font = `900 ${fSize}px "Montserrat","Outfit",sans-serif`;
+      c.textAlign = 'left';
+      c.textBaseline = 'middle';
+      const tx = bx + hPad + iconSize + gap;
+      const ty = by + pillH / 2 + Math.round(1 * baseScale);
+      c.strokeStyle = 'rgba(8, 1, 17, 0.85)';
+      c.lineWidth = Math.max(2, fSize * 0.14);
+      c.lineJoin = 'round';
+      c.strokeText(rawText, tx, ty);
+      const tGrad = c.createLinearGradient(tx, by, tx + textW, by);
+      tGrad.addColorStop(0, '#fff7cc');
+      tGrad.addColorStop(0.55, '#ffc425');
+      tGrad.addColorStop(1, '#ff7b00');
+      c.fillStyle = tGrad;
+      c.fillText(rawText, tx, ty);
+      c.restore();
+    }
+
     function fillThickText(c, text, x, y, fillStyle, strokeW) {
       c.save();
       c.fillStyle = fillStyle;
@@ -726,7 +1090,7 @@
       c.restore();
     }
 
-    function drawBrochureBackground(c, W, H, vignette, isKapak) {
+    function drawBrochureBackground(c, W, H, vignette, isKapak, safeTop = 0, safeH = H) {
       const bg = c.createLinearGradient(0, 0, 0, H);
       bg.addColorStop(0, '#1b0636'); bg.addColorStop(0.45, '#110422'); bg.addColorStop(1, '#080111');
       c.fillStyle = bg; c.fillRect(0, 0, W, H);
@@ -743,28 +1107,44 @@
         const sky = c.createLinearGradient(0, 0, W, H);
         sky.addColorStop(0, '#3c096c'); sky.addColorStop(0.45, '#9d174d'); sky.addColorStop(1, '#180533');
         c.fillStyle = sky; c.fillRect(0, 0, W, H);
-        drawPalm(c, 150, H, 220, 620, 2.0, '#110224', 0.6);
-        drawPalm(c, 930, H, 850, 650, 1.9, '#110224', 0.6);
+        drawPalm(c, 150, H, 220, H * 0.46, 2.0, '#110224', 0.6);
+        drawPalm(c, 930, H, 850, H * 0.48, 1.9, '#110224', 0.6);
         c.restore();
       }
 
+      const safeBot = safeTop + safeH;
       if (isKapak) {
-        const topV = c.createLinearGradient(0, 0, 0, 380);
-        topV.addColorStop(0, 'rgba(13,3,27,0.94)'); topV.addColorStop(0.65, 'rgba(13,3,27,0.48)'); topV.addColorStop(1, 'rgba(13,3,27,0)');
-        c.fillStyle = topV; c.fillRect(0, 0, W, 380);
-        const botV = c.createLinearGradient(0, H - 360, 0, H);
-        botV.addColorStop(0, 'rgba(8,1,17,0)'); botV.addColorStop(0.55, 'rgba(8,1,17,0.78)'); botV.addColorStop(1, 'rgba(8,1,17,0.97)');
-        c.fillStyle = botV; c.fillRect(0, H - 360, W, 360);
+        const topEnd = safeTop + 380;
+        const topV = c.createLinearGradient(0, 0, 0, topEnd);
+        topV.addColorStop(0, 'rgba(13,3,27,0.95)'); topV.addColorStop(0.68, 'rgba(13,3,27,0.52)'); topV.addColorStop(1, 'rgba(13,3,27,0)');
+        c.fillStyle = topV; c.fillRect(0, 0, W, topEnd);
+
+        const botStart = Math.max(0, safeBot - 360);
+        const botV = c.createLinearGradient(0, botStart, 0, safeBot);
+        botV.addColorStop(0, 'rgba(8,1,17,0)'); botV.addColorStop(0.55, 'rgba(8,1,17,0.78)'); botV.addColorStop(1, 'rgba(7,1,15,0.98)');
+        c.fillStyle = botV; c.fillRect(0, botStart, W, safeBot - botStart);
       } else {
-        const topV = c.createLinearGradient(0, 0, 0, 220);
-        topV.addColorStop(0, 'rgba(13,3,27,.55)'); topV.addColorStop(1, 'rgba(13,3,27,0)');
-        c.fillStyle = topV; c.fillRect(0, 0, W, 220);
-        const botV = c.createLinearGradient(0, H - 760, 0, H);
+        const topEnd = safeTop + 240;
+        const topV = c.createLinearGradient(0, 0, 0, topEnd);
+        topV.addColorStop(0, 'rgba(13,3,27,0.68)'); topV.addColorStop(1, 'rgba(13,3,27,0)');
+        c.fillStyle = topV; c.fillRect(0, 0, W, topEnd);
+
+        const botStart = Math.max(0, safeBot - 760);
+        const botV = c.createLinearGradient(0, botStart, 0, safeBot);
         botV.addColorStop(0, 'rgba(8,1,17,0)');
         botV.addColorStop(0.35, `rgba(8,1,17,${(vignette * 0.44).toFixed(2)})`);
         botV.addColorStop(0.70, `rgba(8,1,17,${(vignette * 0.86).toFixed(2)})`);
-        botV.addColorStop(1, `rgba(8,1,17,${Math.min(0.99, vignette + 0.08).toFixed(2)})`);
-        c.fillStyle = botV; c.fillRect(0, H - 760, W, 760);
+        botV.addColorStop(1, `rgba(7,1,15,${Math.min(0.99, vignette + 0.08).toFixed(2)})`);
+        c.fillStyle = botV; c.fillRect(0, botStart, W, safeBot - botStart);
+      }
+
+      if (safeBot < H) {
+        const ext = c.createLinearGradient(0, safeBot, 0, H);
+        ext.addColorStop(0, 'rgba(7,1,15,0.98)');
+        ext.addColorStop(0.5, 'rgba(12,3,24,0.90)');
+        ext.addColorStop(1, 'rgba(8,1,17,0.96)');
+        c.fillStyle = ext;
+        c.fillRect(0, safeBot, W, H - safeBot);
       }
     }
 
@@ -929,198 +1309,12 @@
       c.restore();
     }
 
-    function drawCoverCrop(c, video, box, dx, dy, dw, dh) {
-      const vw = video.videoWidth, vh = video.videoHeight;
-      if (!vw || !vh) return;
-      const sx = box.x * vw, sy = box.y * vh, sw = Math.max(2, box.w * vw), sh = Math.max(2, box.h * vh);
-      const tAsp = dw / dh, sAsp = sw / sh;
-      let fx = sx, fy = sy, fw = sw, fh = sh;
-      if (sAsp > tAsp) { fw = sh * tAsp; fx = sx + (sw - fw) / 2; }
-      else { fh = sw / tAsp; fy = sy + (sh - fh) / 2; }
-      c.drawImage(video, fx, fy, fw, fh, dx, dy, dw, dh);
-    }
-
-    const blurCanvas2 = document.createElement('canvas');
-    const blurCtx2 = blurCanvas2.getContext('2d');
-
-    function drawBlurredBg(c, video, outW, outH) {
-      const vw = video.videoWidth, vh = video.videoHeight;
-      if (!vw || !vh) return;
-      const b = Math.max(0, state.videoBlur);
-      if (b <= 0) {
-        const sc0 = Math.max(outW / vw, outH / vh);
-        const dw0 = vw * sc0, dh0 = vh * sc0;
-        c.drawImage(video, (outW - dw0) / 2, (outH - dh0) / 2, dw0, dh0);
-        return;
-      }
-      const ratio = outH / outW;
-      const w1 = Math.max(18, Math.round(130 - b * 4));
-      const h1 = Math.max(18, Math.round(w1 * ratio));
-      const w2 = Math.max(10, Math.round(w1 * 0.55));
-      const h2 = Math.max(10, Math.round(h1 * 0.55));
-
-      if (blurCanvas.width !== w1 || blurCanvas.height !== h1) {
-        blurCanvas.width = w1;
-        blurCanvas.height = h1;
-      }
-      if (blurCanvas2.width !== w2 || blurCanvas2.height !== h2) {
-        blurCanvas2.width = w2;
-        blurCanvas2.height = h2;
-      }
-
-      blurCtx.imageSmoothingEnabled = true;
-      blurCtx.imageSmoothingQuality = 'high';
-      blurCtx2.imageSmoothingEnabled = true;
-      blurCtx2.imageSmoothingQuality = 'high';
-
-      const sc = Math.max(w1 / vw, h1 / vh) * 1.12;
-      const dw = vw * sc, dh = vh * sc;
-      blurCtx.globalAlpha = 1;
-      blurCtx.drawImage(video, (w1 - dw) / 2, (h1 - dh) / 2, dw, dh);
-
-      const taps = [
-        [-1, -1, 1.0],
-        [1, -1, 0.5],
-        [-1, 1, 1 / 3],
-        [1, 1, 0.25]
-      ];
-      const s1 = Math.max(1, b * 0.09);
-      for (const [ox, oy, alpha] of taps) {
-        blurCtx2.globalAlpha = alpha;
-        blurCtx2.drawImage(blurCanvas, ox * s1 - s1, oy * s1 - s1, w2 + s1 * 2, h2 + s1 * 2);
-      }
-      const s2 = Math.max(1.2, b * 0.14);
-      for (const [ox, oy, alpha] of taps) {
-        blurCtx.globalAlpha = alpha;
-        blurCtx.drawImage(blurCanvas2, ox * s2 - s2, oy * s2 - s2, w1 + s2 * 2, h1 + s2 * 2);
-      }
-      blurCtx.globalAlpha = 1;
-      blurCtx2.globalAlpha = 1;
-
-      c.save();
-      c.imageSmoothingEnabled = true;
-      c.imageSmoothingQuality = 'high';
-      const padX = Math.round(outW * 0.04);
-      const padY = Math.round(outH * 0.04);
-      c.drawImage(blurCanvas, -padX, -padY, outW + padX * 2, outH + padY * 2);
-      c.fillStyle = 'rgba(8, 1, 17, 0.18)';
-      c.fillRect(0, 0, outW, outH);
-      c.restore();
-    }
-
-    function computeVideoDims() {
-      const baseW = state.videoQuality;
-      if (state.videoSubMode === 'footer_only') {
-        let vw = videoEl.videoWidth || 1080, vh = videoEl.videoHeight || 1920;
-        const sc = Math.min(1, baseW / Math.max(vw, 1));
-        const outW = evenInt(vw * sc, 64), baseH = evenInt(vh * sc, 64);
-        const ftH = state.videoFtOn ? evenInt(state.videoFtH * (outW / 1080), 32) : 0;
-        return { outW, outH: evenInt(baseH + ftH, 64), baseH, ftH, fcOutH: 0, gpOutH: baseH };
-      }
-      const outW = evenInt(baseW, 64);
-      const outH = state.videoFormat === '4:5' ? evenInt(outW * 1.25, 64) : evenInt(outW * (16 / 9), 64);
-      const ftH = state.videoFtOn ? evenInt(state.videoFtH * (outW / 1080), 32) : 0;
-      if (state.videoSubMode === 'fit_blur') {
-        const fcOutH = evenInt(outH * state.videoFcRatio, 64);
-        return { outW, outH, baseH: outH, ftH, fcOutH, gpOutH: evenInt(outH - fcOutH, 64) };
-      }
-      const usableH = state.videoFtOn ? (outH - ftH) : outH;
-      const fcOutH = evenInt(usableH * state.videoFcRatio, 64);
-      return { outW, outH, baseH: outH, ftH, fcOutH, gpOutH: evenInt(usableH - fcOutH, 64) };
-    }
-
-    function renderFacecamFrame(targetCanvas) {
-      const ac = targetCanvas || canvas, c = ac.getContext('2d');
-      const { outW, outH, baseH, ftH, fcOutH, gpOutH } = computeVideoDims();
-      if (ac.width !== outW) ac.width = outW;
-      if (ac.height !== outH) ac.height = outH;
-      document.getElementById('res-info').textContent = `${outW}×${outH} • Video`;
-      c.fillStyle = '#080111'; c.fillRect(0, 0, outW, outH);
-
-      const hasVid = state.videoLoaded && videoEl.readyState >= 2 && videoEl.videoWidth > 0;
-      if (state.videoSubMode === 'footer_only') {
-        if (hasVid) { c.drawImage(videoEl, 0, 0, outW, baseH); }
-        else {
-          const g = c.createLinearGradient(0, 0, outW, baseH); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#10031f');
-          c.fillStyle = g; c.fillRect(0, 0, outW, baseH);
-          c.textAlign = 'center'; c.textBaseline = 'middle';
-          c.font = `900 ${Math.round(outW * 0.055)}px "Outfit",sans-serif`; c.fillStyle = '#f472b6';
-          c.fillText('VİDEO SEÇİN', outW / 2, baseH / 2);
-        }
-        if (state.videoFtOn) drawFooterBar(c, outW, ftH, baseH);
-        return;
-      }
-
-      if (hasVid) {
-        if (state.videoSubMode === 'fit_blur') {
-          drawBlurredBg(c, videoEl, outW, outH);
-          drawCoverCrop(c, videoEl, state.fc, 0, 0, outW, fcOutH);
-          const sc = Math.min(outW / videoEl.videoWidth, gpOutH / videoEl.videoHeight);
-          const dw = videoEl.videoWidth * sc, dh = videoEl.videoHeight * sc;
-          c.drawImage(videoEl, (outW - dw) / 2, fcOutH, dw, dh);
-        } else {
-          drawCoverCrop(c, videoEl, state.fc, 0, 0, outW, fcOutH);
-          drawCoverCrop(c, videoEl, state.gp, 0, fcOutH, outW, gpOutH);
-        }
-      } else {
-        const g1 = c.createLinearGradient(0, 0, outW, fcOutH); g1.addColorStop(0, '#2a0944'); g1.addColorStop(1, '#160429');
-        c.fillStyle = g1; c.fillRect(0, 0, outW, fcOutH);
-        const g2 = c.createLinearGradient(0, fcOutH, outW, outH); g2.addColorStop(0, '#140424'); g2.addColorStop(1, '#090214');
-        c.fillStyle = g2; c.fillRect(0, fcOutH, outW, outH - fcOutH);
-        c.textAlign = 'center'; c.textBaseline = 'middle';
-        c.font = `900 ${Math.round(outW * 0.052)}px "Outfit",sans-serif`;
-        c.fillStyle = '#ff2a85'; c.fillText('FACECAM', outW / 2, fcOutH / 2);
-        c.fillStyle = '#00e5ff'; c.fillText('OYUN EKRANI', outW / 2, fcOutH + (outH - fcOutH - ftH) / 2);
-      }
-
-      if (state.videoDivOn) drawDividerBar(c, outW, fcOutH, state.videoDivH);
-      if (state.videoFtOn) drawFooterBar(c, outW, ftH, Math.max(0, outH - ftH));
-    }
-
-    function renderCanvas(targetCanvas) {
-      if (state.mode === 'facecam') { renderFacecamFrame(targetCanvas); return; }
-      const ac = targetCanvas || canvas, c = ac.getContext('2d');
-
-      if (state.mode === 'foto') {
-        const srcW = isReady(state.photoImg) ? state.photoImg.naturalWidth : 1080;
-        const srcH = isReady(state.photoImg) ? state.photoImg.naturalHeight : 1350;
-        const outW = evenInt(srcW, 64), baseH = evenInt(srcH, 64), scale = outW / 1080;
-        const footerH = evenInt(state.footerH * scale, 32);
-        const footerPad = Math.max(0, Math.round(state.footerPad * scale));
-        const outH = state.footerPlace === 'append' ? evenInt(baseH + footerH, 64) : baseH;
-        ac.width = outW; ac.height = outH;
-        document.getElementById('res-info').textContent = `${outW}×${outH}`;
-        c.fillStyle = '#080111'; c.fillRect(0, 0, outW, outH);
-
-        if (isReady(state.photoImg)) {
-          c.drawImage(state.photoImg, 0, 0, outW, baseH);
-        } else {
-          const g = c.createLinearGradient(0, 0, outW, baseH); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#10031f');
-          c.fillStyle = g; c.fillRect(0, 0, outW, baseH);
-          c.textAlign = 'center'; c.textBaseline = 'middle';
-          c.font = '900 44px "Outfit","Montserrat",sans-serif'; c.fillStyle = '#f472b6';
-          c.fillText('FOTOĞRAF SEÇİN', outW / 2, baseH / 2 - 22);
-          c.font = '700 24px "Montserrat",sans-serif'; c.fillStyle = '#c4b5fd';
-          c.fillText('Altına vice.cityiv footer eklenir', outW / 2, baseH / 2 + 28);
-        }
-        const fy = state.footerPlace === 'append' ? baseH : Math.max(0, baseH - footerH - footerPad);
-        drawFooterBar(c, outW, footerH, fy);
-        return;
-      }
-
-      const W = 1080, H = 1350, padX = 46;
-      ac.width = 2160; ac.height = 2700;
-      document.getElementById('res-info').textContent = '2160×2700 • 4:5';
-      c.save(); c.clearRect(0, 0, 2160, 2700); c.scale(2, 2);
-
-      const vig = state.mode === 'tek' ? state.tekVignette : state.maddeVignette;
-      drawBrochureBackground(c, W, H, vig, state.mode === 'kapak');
+    function drawBrochureBody(c, W, H, padX) {
       drawTopLogo(c, W - padX - 4, 26, 164, 115);
 
       if (state.mode === 'kapak') {
         drawKapakContent(c, W, H, padX);
         drawFooterBar(c, W, 102, H - 102);
-        c.restore();
         return;
       }
 
@@ -1229,6 +1423,321 @@
       }
 
       drawFooterBar(c, W, 102, H - 102);
+    }
+
+    function drawCoverCrop(c, video, box, dx, dy, dw, dh) {
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) return;
+      const sx = box.x * vw, sy = box.y * vh, sw = Math.max(2, box.w * vw), sh = Math.max(2, box.h * vh);
+      const tAsp = dw / dh, sAsp = sw / sh;
+      let fx = sx, fy = sy, fw = sw, fh = sh;
+      if (sAsp > tAsp) { fw = sh * tAsp; fx = sx + (sw - fw) / 2; }
+      else { fh = sw / tAsp; fy = sy + (sh - fh) / 2; }
+      c.drawImage(video, fx, fy, fw, fh, dx, dy, dw, dh);
+    }
+
+    function drawBlurredMedia(c, source, vw, vh, outW, outH, blurAmt, dimAlpha = 0.18) {
+      if (!vw || !vh) return;
+      const b = Math.max(0, blurAmt);
+      if (b <= 0) {
+        const sc0 = Math.max(outW / vw, outH / vh);
+        const dw0 = vw * sc0, dh0 = vh * sc0;
+        c.drawImage(source, (outW - dw0) / 2, (outH - dh0) / 2, dw0, dh0);
+        return;
+      }
+      const ratio = outH / outW;
+      const w1 = Math.max(18, Math.round(130 - b * 4));
+      const h1 = Math.max(18, Math.round(w1 * ratio));
+      const w2 = Math.max(10, Math.round(w1 * 0.55));
+      const h2 = Math.max(10, Math.round(h1 * 0.55));
+
+      if (blurCanvas.width !== w1 || blurCanvas.height !== h1) { blurCanvas.width = w1; blurCanvas.height = h1; }
+      if (blurCanvas2.width !== w2 || blurCanvas2.height !== h2) { blurCanvas2.width = w2; blurCanvas2.height = h2; }
+
+      blurCtx.imageSmoothingEnabled = true; blurCtx.imageSmoothingQuality = 'high';
+      blurCtx2.imageSmoothingEnabled = true; blurCtx2.imageSmoothingQuality = 'high';
+
+      const sc = Math.max(w1 / vw, h1 / vh) * 1.12;
+      const dw = vw * sc, dh = vh * sc;
+      blurCtx.globalAlpha = 1;
+      blurCtx.drawImage(source, (w1 - dw) / 2, (h1 - dh) / 2, dw, dh);
+
+      const taps = [[-1, -1, 1.0], [1, -1, 0.5], [-1, 1, 1 / 3], [1, 1, 0.25]];
+      const s1 = Math.max(1, b * 0.09);
+      for (const [ox, oy, alpha] of taps) {
+        blurCtx2.globalAlpha = alpha;
+        blurCtx2.drawImage(blurCanvas, ox * s1 - s1, oy * s1 - s1, w2 + s1 * 2, h2 + s1 * 2);
+      }
+      const s2 = Math.max(1.2, b * 0.14);
+      for (const [ox, oy, alpha] of taps) {
+        blurCtx.globalAlpha = alpha;
+        blurCtx.drawImage(blurCanvas2, ox * s2 - s2, oy * s2 - s2, w1 + s2 * 2, h1 + s2 * 2);
+      }
+      blurCtx.globalAlpha = 1; blurCtx2.globalAlpha = 1;
+
+      c.save();
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+      const padX = Math.round(outW * 0.04), padY = Math.round(outH * 0.04);
+      c.drawImage(blurCanvas, -padX, -padY, outW + padX * 2, outH + padY * 2);
+      if (dimAlpha > 0) {
+        c.fillStyle = `rgba(8, 1, 17, ${dimAlpha})`;
+        c.fillRect(0, 0, outW, outH);
+      }
+      c.restore();
+    }
+
+    function drawBlurredBg(c, video, outW, outH) {
+      drawBlurredMedia(c, video, video.videoWidth, video.videoHeight, outW, outH, state.videoBlur, 0.18);
+    }
+
+    function computeVideoDims() {
+      const baseW = state.videoQuality;
+      if (state.videoSubMode === 'footer_only') {
+        let vw = videoEl.videoWidth || 1080, vh = videoEl.videoHeight || 1920;
+        const sc = Math.min(1, baseW / Math.max(vw, 1));
+        const outW = evenInt(vw * sc, 64), baseH = evenInt(vh * sc, 64);
+        const ftH = state.videoFtOn ? evenInt(state.videoFtH * (outW / 1080), 32) : 0;
+        return { outW, outH: evenInt(baseH + ftH, 64), baseH, ftH, fcOutH: 0, gpOutH: baseH };
+      }
+      const outW = evenInt(baseW, 64);
+      const outH = state.videoFormat === '4:5' ? evenInt(outW * 1.25, 64) : evenInt(outW * (16 / 9), 64);
+      const ftH = state.videoFtOn ? evenInt(state.videoFtH * (outW / 1080), 32) : 0;
+      if (state.videoSubMode === 'fit_blur') {
+        const fcOutH = evenInt(outH * state.videoFcRatio, 64);
+        return { outW, outH, baseH: outH, ftH, fcOutH, gpOutH: evenInt(outH - fcOutH, 64) };
+      }
+      const usableH = state.videoFtOn ? (outH - ftH) : outH;
+      const fcOutH = evenInt(usableH * state.videoFcRatio, 64);
+      return { outW, outH, baseH: outH, ftH, fcOutH, gpOutH: evenInt(usableH - fcOutH, 64) };
+    }
+
+    function renderFacecamFrame(targetCanvas) {
+      const ac = targetCanvas || canvas, c = ac.getContext('2d');
+      const { outW, outH, baseH, ftH, fcOutH, gpOutH } = computeVideoDims();
+      if (ac.width !== outW) ac.width = outW;
+      if (ac.height !== outH) ac.height = outH;
+      if (!targetCanvas) document.getElementById('res-info').textContent = `${outW}×${outH} • Video`;
+      c.fillStyle = '#080111'; c.fillRect(0, 0, outW, outH);
+
+      const hasVid = state.videoLoaded && videoEl.readyState >= 2 && videoEl.videoWidth > 0;
+      if (state.videoSubMode === 'footer_only') {
+        if (hasVid) { c.drawImage(videoEl, 0, 0, outW, baseH); }
+        else {
+          const g = c.createLinearGradient(0, 0, outW, baseH); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#10031f');
+          c.fillStyle = g; c.fillRect(0, 0, outW, baseH);
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = `900 ${Math.round(outW * 0.055)}px "Outfit",sans-serif`; c.fillStyle = '#f472b6';
+          c.fillText('VİDEO SEÇİN', outW / 2, baseH / 2);
+        }
+        if (state.videoFtOn) drawFooterBar(c, outW, ftH, baseH);
+        drawSpoilerOverlay(c, outW, outH, 0, outH, state.videoFtOn ? ftH : 0, false);
+        return;
+      }
+
+      if (hasVid) {
+        if (state.videoSubMode === 'fit_blur') {
+          drawBlurredBg(c, videoEl, outW, outH);
+          drawCoverCrop(c, videoEl, state.fc, 0, 0, outW, fcOutH);
+          const sc = Math.min(outW / videoEl.videoWidth, gpOutH / videoEl.videoHeight);
+          const dw = videoEl.videoWidth * sc, dh = videoEl.videoHeight * sc;
+          c.drawImage(videoEl, (outW - dw) / 2, fcOutH, dw, dh);
+        } else {
+          drawCoverCrop(c, videoEl, state.fc, 0, 0, outW, fcOutH);
+          drawCoverCrop(c, videoEl, state.gp, 0, fcOutH, outW, gpOutH);
+        }
+      } else {
+        const g1 = c.createLinearGradient(0, 0, outW, fcOutH); g1.addColorStop(0, '#2a0944'); g1.addColorStop(1, '#160429');
+        c.fillStyle = g1; c.fillRect(0, 0, outW, fcOutH);
+        const g2 = c.createLinearGradient(0, fcOutH, outW, outH); g2.addColorStop(0, '#140424'); g2.addColorStop(1, '#090214');
+        c.fillStyle = g2; c.fillRect(0, fcOutH, outW, outH - fcOutH);
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.font = `900 ${Math.round(outW * 0.052)}px "Outfit",sans-serif`;
+        c.fillStyle = '#ff2a85'; c.fillText('FACECAM', outW / 2, fcOutH / 2);
+        c.fillStyle = '#00e5ff'; c.fillText('OYUN EKRANI', outW / 2, fcOutH + (outH - fcOutH - ftH) / 2);
+      }
+
+      if (state.videoDivOn) drawDividerBar(c, outW, fcOutH, state.videoDivH);
+      if (state.videoFtOn) drawFooterBar(c, outW, ftH, Math.max(0, outH - ftH));
+      drawSpoilerOverlay(c, outW, outH, 0, outH, state.videoFtOn ? ftH : 0, false);
+    }
+
+    function renderReelsCover(targetCanvas) {
+      const ac = targetCanvas || canvas;
+      const c = ac.getContext('2d');
+      const W = 1080, H = 1920, safeTop = 240, safeH = 1440, padX = 46;
+      if (ac.width !== W) ac.width = W;
+      if (ac.height !== H) ac.height = H;
+      if (!targetCanvas) document.getElementById('res-info').textContent = '1080×1920 • Reels Kapak (3:4 Izgara)';
+
+      c.save();
+      c.clearRect(0, 0, W, H);
+      c.fillStyle = '#080111';
+      c.fillRect(0, 0, W, H);
+
+      if (state.mode === 'tek' || state.mode === 'madde' || state.mode === 'kapak') {
+        const vig = state.mode === 'tek' ? state.tekVignette : state.maddeVignette;
+        drawBrochureBackground(c, W, H, vig, state.mode === 'kapak', safeTop, safeH);
+        c.save();
+        c.translate(0, safeTop);
+        drawBrochureBody(c, W, safeH, padX);
+        c.restore();
+        drawSpoilerOverlay(c, W, H, safeTop, safeH, 102, true);
+        c.restore();
+        return;
+      }
+
+      if (state.mode === 'foto') {
+        const ftH = evenInt(state.footerH, 32);
+        const ftPad = Math.max(0, Math.round(state.footerPad));
+
+        if (isReady(state.photoImg)) {
+          const img = state.photoImg, iw = img.naturalWidth, ih = img.naturalHeight;
+          drawBlurredMedia(c, img, iw, ih, W, H, 16, 0.36);
+
+          if (state.footerPlace === 'append') {
+            const areaH = safeH - ftH;
+            const sc = Math.min(W / iw, areaH / ih);
+            const dw = iw * sc, dh = ih * sc;
+            c.drawImage(img, (W - dw) / 2, safeTop + (areaH - dh) / 2, dw, dh);
+            drawFooterBar(c, W, ftH, safeTop + safeH - ftH);
+          } else {
+            if (ih / iw >= 1.45) {
+              const sc = Math.max(W / iw, H / ih);
+              const dw = iw * sc, dh = ih * sc;
+              c.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+            } else {
+              const sc = Math.min(W / iw, safeH / ih);
+              const dw = iw * sc, dh = ih * sc;
+              c.drawImage(img, (W - dw) / 2, safeTop + (safeH - dh) / 2, dw, dh);
+            }
+            const fy = Math.max(safeTop, safeTop + safeH - ftH - ftPad);
+            drawFooterBar(c, W, ftH, fy);
+          }
+        } else {
+          const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#0c0218');
+          c.fillStyle = g; c.fillRect(0, 0, W, H);
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = '900 44px "Outfit","Montserrat",sans-serif'; c.fillStyle = '#f472b6';
+          c.fillText('FOTOĞRAF SEÇİN', W / 2, safeTop + (safeH - ftH) / 2 - 22);
+          c.font = '700 24px "Montserrat",sans-serif'; c.fillStyle = '#c4b5fd';
+          c.fillText('Reels Kapak (1080×1920 • 3:4 Izgara)', W / 2, safeTop + (safeH - ftH) / 2 + 28);
+          drawFooterBar(c, W, ftH, safeTop + safeH - ftH);
+        }
+
+        const ext = c.createLinearGradient(0, safeTop + safeH, 0, H);
+        ext.addColorStop(0, 'rgba(7,1,15,0.88)'); ext.addColorStop(1, 'rgba(7,1,15,0.42)');
+        c.fillStyle = ext; c.fillRect(0, safeTop + safeH, W, H - (safeTop + safeH));
+        drawSpoilerOverlay(c, W, H, safeTop, safeH, state.footerPlace === 'append' ? ftH : (ftH + ftPad), false);
+        c.restore();
+        return;
+      }
+
+      // Facecam Video modunda Reels Kapak (1080×1920 • 3:4 Izgara)
+      const hasVid = state.videoLoaded && videoEl.readyState >= 2 && videoEl.videoWidth > 0;
+      const ftH = state.videoFtOn ? evenInt(state.videoFtH, 32) : 0;
+      const usableH = safeH - ftH;
+
+      if (hasVid) {
+        drawBlurredBg(c, videoEl, W, H);
+      } else {
+        const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#090214');
+        c.fillStyle = g; c.fillRect(0, 0, W, H);
+      }
+
+      if (state.videoSubMode === 'footer_only') {
+        if (hasVid) {
+          const sc = Math.min(W / videoEl.videoWidth, usableH / videoEl.videoHeight);
+          const dw = videoEl.videoWidth * sc, dh = videoEl.videoHeight * sc;
+          c.drawImage(videoEl, (W - dw) / 2, safeTop + (usableH - dh) / 2, dw, dh);
+        } else {
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = '900 54px "Outfit",sans-serif'; c.fillStyle = '#f472b6';
+          c.fillText('VİDEO SEÇİN', W / 2, safeTop + usableH / 2);
+        }
+      } else {
+        const fcOutH = evenInt(usableH * state.videoFcRatio, 64);
+        const gpOutH = usableH - fcOutH;
+        if (hasVid) {
+          if (state.videoSubMode === 'fit_blur') {
+            drawCoverCrop(c, videoEl, state.fc, 0, safeTop, W, fcOutH);
+            const sc = Math.min(W / videoEl.videoWidth, gpOutH / videoEl.videoHeight);
+            const dw = videoEl.videoWidth * sc, dh = videoEl.videoHeight * sc;
+            c.drawImage(videoEl, (W - dw) / 2, safeTop + fcOutH, dw, dh);
+          } else {
+            drawCoverCrop(c, videoEl, state.fc, 0, safeTop, W, fcOutH);
+            drawCoverCrop(c, videoEl, state.gp, 0, safeTop + fcOutH, W, gpOutH);
+          }
+        } else {
+          const g1 = c.createLinearGradient(0, safeTop, W, safeTop + fcOutH); g1.addColorStop(0, '#2a0944'); g1.addColorStop(1, '#160429');
+          c.fillStyle = g1; c.fillRect(0, safeTop, W, fcOutH);
+          const g2 = c.createLinearGradient(0, safeTop + fcOutH, W, safeTop + usableH); g2.addColorStop(0, '#140424'); g2.addColorStop(1, '#090214');
+          c.fillStyle = g2; c.fillRect(0, safeTop + fcOutH, W, gpOutH);
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = '900 54px "Outfit",sans-serif';
+          c.fillStyle = '#ff2a85'; c.fillText('FACECAM', W / 2, safeTop + fcOutH / 2);
+          c.fillStyle = '#00e5ff'; c.fillText('OYUN EKRANI', W / 2, safeTop + fcOutH + gpOutH / 2);
+        }
+        if (state.videoDivOn) drawDividerBar(c, W, safeTop + fcOutH, state.videoDivH);
+      }
+
+      if (state.videoFtOn) {
+        drawFooterBar(c, W, ftH, safeTop + safeH - ftH);
+        const ext = c.createLinearGradient(0, safeTop + safeH, 0, H);
+        ext.addColorStop(0, 'rgba(7,1,15,0.92)'); ext.addColorStop(1, 'rgba(7,1,15,0.45)');
+        c.fillStyle = ext; c.fillRect(0, safeTop + safeH, W, H - (safeTop + safeH));
+      }
+
+      drawSpoilerOverlay(c, W, H, safeTop, safeH, ftH, false);
+      c.restore();
+    }
+
+    function renderCanvas(targetCanvas, forceReelsCover = false) {
+      const useReels = forceReelsCover || (!targetCanvas && state.previewReelsCover && !isRecording);
+      if (useReels) {
+        renderReelsCover(targetCanvas);
+        return;
+      }
+
+      if (state.mode === 'facecam') { renderFacecamFrame(targetCanvas); return; }
+      const ac = targetCanvas || canvas, c = ac.getContext('2d');
+
+      if (state.mode === 'foto') {
+        const srcW = isReady(state.photoImg) ? state.photoImg.naturalWidth : 1080;
+        const srcH = isReady(state.photoImg) ? state.photoImg.naturalHeight : 1350;
+        const outW = evenInt(srcW, 64), baseH = evenInt(srcH, 64), scale = outW / 1080;
+        const footerH = evenInt(state.footerH * scale, 32);
+        const footerPad = Math.max(0, Math.round(state.footerPad * scale));
+        const outH = state.footerPlace === 'append' ? evenInt(baseH + footerH, 64) : baseH;
+        ac.width = outW; ac.height = outH;
+        if (!targetCanvas) document.getElementById('res-info').textContent = `${outW}×${outH}`;
+        c.fillStyle = '#080111'; c.fillRect(0, 0, outW, outH);
+
+        if (isReady(state.photoImg)) {
+          c.drawImage(state.photoImg, 0, 0, outW, baseH);
+        } else {
+          const g = c.createLinearGradient(0, 0, outW, baseH); g.addColorStop(0, '#1f0738'); g.addColorStop(1, '#10031f');
+          c.fillStyle = g; c.fillRect(0, 0, outW, baseH);
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.font = '900 44px "Outfit","Montserrat",sans-serif'; c.fillStyle = '#f472b6';
+          c.fillText('FOTOĞRAF SEÇİN', outW / 2, baseH / 2 - 22);
+          c.font = '700 24px "Montserrat",sans-serif'; c.fillStyle = '#c4b5fd';
+          c.fillText('Altına vice.cityiv footer eklenir', outW / 2, baseH / 2 + 28);
+        }
+        const fy = state.footerPlace === 'append' ? baseH : Math.max(0, baseH - footerH - footerPad);
+        drawFooterBar(c, outW, footerH, fy);
+        drawSpoilerOverlay(c, outW, outH, 0, outH, state.footerPlace === 'append' ? footerH : (footerH + footerPad), false);
+        return;
+      }
+
+      const W = 1080, H = 1350, padX = 46;
+      ac.width = 2160; ac.height = 2700;
+      if (!targetCanvas) document.getElementById('res-info').textContent = '2160×2700 • 4:5';
+      c.save(); c.clearRect(0, 0, 2160, 2700); c.scale(2, 2);
+
+      const vig = state.mode === 'tek' ? state.tekVignette : state.maddeVignette;
+      drawBrochureBackground(c, W, H, vig, state.mode === 'kapak', 0, H);
+      drawBrochureBody(c, W, H, padX);
+      drawSpoilerOverlay(c, W, H, 0, H, 102, true);
       c.restore();
     }
 
@@ -1258,6 +1767,7 @@
     }
 
     function updateCaption() {
+      const spPrefix = state.spoilerOn ? `⚠️ ${(state.spoilerText || 'DİKKAT SPOİLER İÇERİR!!!').trim().toLocaleUpperCase('tr-TR')}\n\n` : '';
       let body = '';
       if (state.mode === 'tek') {
         body = state.tekSentence.replace(/\*+/g, '');
@@ -1267,12 +1777,12 @@
         const cleanHead = (state.kapakHead || '').replace(/\*+/g, '').trim();
         const subPart = state.kapakSub ? `${state.kapakSub}\n\n` : '';
         document.getElementById('txt-caption').value =
-          `🌴 ${state.kapakDate} | ${cleanHead}\n\n${subPart}👉 Günün tüm gelişmelerini görmek için yana kaydırın!\n\n🔔 Günlük GTA 6 haberleri için takip et: @${state.username}\n\n#gta6 #gtavi #vicecity #gta6haberleri #rockstargames #gtaturkiye`;
+          `${spPrefix}🌴 ${state.kapakDate} | ${cleanHead}\n\n${subPart}👉 Günün tüm gelişmelerini görmek için yana kaydırın!\n\n🔔 Günlük GTA 6 haberleri için takip et: @${state.username}\n\n#gta6 #gtavi #vicecity #gta6haberleri #rockstargames #gtaturkiye`;
         return;
       } else {
         body = state.footerNote;
       }
-      document.getElementById('txt-caption').value = `🌴 ${body}\n\n🔔 Takip et: @${state.username}\n\n#gta6 #gtavi #vicecity #gta6haberleri #rockstargames`;
+      document.getElementById('txt-caption').value = `${spPrefix}🌴 ${body}\n\n🔔 Takip et: @${state.username}\n\n#gta6 #gtavi #vicecity #gta6haberleri #rockstargames`;
     }
 
     function syncUI() {
@@ -1288,8 +1798,37 @@
 
       const isBrochure = state.mode === 'tek' || state.mode === 'madde' || state.mode === 'kapak';
       document.getElementById('panel-bg-controls').classList.toggle('hidden', !isBrochure);
-      document.getElementById('btn-png-export').classList.toggle('hidden', state.mode === 'facecam');
+      document.getElementById('btn-png-export').classList.toggle('hidden', state.mode === 'facecam' && !state.previewReelsCover);
+      document.getElementById('btn-png-export').textContent = state.previewReelsCover ? 'REELS PNG' : 'PNG';
       document.getElementById('btn-main-export').textContent = state.mode === 'facecam' ? 'VİDEOYU KAYDET' : 'KAYDET / PAYLAŞ';
+
+      const prevBtn = document.getElementById('btn-reels-preview');
+      prevBtn.className = state.previewReelsCover
+        ? 'bg-amber-500 text-black text-[10px] font-black px-2.5 py-1.5 rounded-lg border border-amber-200 cursor-pointer'
+        : 'bg-[#150529] text-amber-300 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg border border-amber-500/40 cursor-pointer';
+      prevBtn.textContent = state.previewReelsCover ? 'Reels Kapak: Açık' : 'Reels Kapak Önizle';
+
+      const guideBtn = document.getElementById('btn-reels-guide');
+      guideBtn.classList.toggle('hidden', !state.previewReelsCover);
+      guideBtn.textContent = state.showReelsGuide ? 'Izgara: Açık' : 'Izgara: Kapalı';
+      document.getElementById('reels-grid-guide').classList.toggle('hidden', !(state.previewReelsCover && state.showReelsGuide));
+
+      const spBtn = document.getElementById('btn-toggle-spoiler');
+      spBtn.className = state.spoilerOn
+        ? 'bg-gradient-to-r from-amber-500 to-rose-600 text-white text-[11px] font-black px-3 py-1.5 rounded-xl border border-amber-200 cursor-pointer shrink-0'
+        : 'bg-[#0b0217] text-amber-200 text-[11px] font-black px-3 py-1.5 rounded-xl border border-amber-500/50 cursor-pointer shrink-0';
+      spBtn.textContent = state.spoilerOn ? 'EKLENDİ ✓ (Kaldır)' : 'EKLE (Kapalı)';
+      document.getElementById('spoiler-options').classList.toggle('hidden', !state.spoilerOn);
+
+      const isBadge = state.spoilerStyle === 'badge';
+      document.getElementById('btn-sp-badge').className = isBadge
+        ? 'bg-amber-500 text-black py-1.5 px-2 rounded-lg border border-amber-300 cursor-pointer'
+        : 'bg-[#150529] text-purple-200 py-1.5 px-2 rounded-lg border border-purple-500/40 cursor-pointer';
+      document.getElementById('btn-sp-cover').className = !isBadge
+        ? 'bg-amber-500 text-black py-1.5 px-2 rounded-lg border border-amber-300 cursor-pointer'
+        : 'bg-[#150529] text-purple-200 py-1.5 px-2 rounded-lg border border-purple-500/40 cursor-pointer';
+      document.getElementById('wrap-sp-pos').classList.toggle('hidden', !isBadge);
+      document.getElementById('wrap-sp-dim').classList.toggle('hidden', isBadge);
 
       const isAppend = state.footerPlace === 'append';
       document.getElementById('btn-place-append').className = isAppend
@@ -1322,6 +1861,10 @@
     window.setFooterPlace = function(p) { state.footerPlace = p; syncUI(); };
     window.setVideoSubMode = function(sm) { state.videoSubMode = sm; syncUI(); };
     window.resetBgToDefault = function() { state.customBgImg = null; renderCanvas(); };
+    window.toggleReelsPreview = function() { state.previewReelsCover = !state.previewReelsCover; syncUI(); };
+    window.toggleReelsGuide = function() { state.showReelsGuide = !state.showReelsGuide; syncUI(); };
+    window.toggleSpoiler = function() { state.spoilerOn = !state.spoilerOn; syncUI(); };
+    window.setSpoilerStyle = function(st) { state.spoilerStyle = st; syncUI(); };
     window.setKapakDate = function(offsetDays) {
       state.kapakDate = formatTurkishDate(offsetDays);
       document.getElementById('inp-k-date').value = state.kapakDate;
@@ -1377,12 +1920,36 @@
       else window.exportImage('jpg', true);
     };
 
+    window.handlePngExport = function() {
+      if (state.previewReelsCover) window.exportReelsCover('png', false);
+      else window.exportImage('png', false);
+    };
+
     window.exportImage = function(fmt, preferShare) {
       const isPng = fmt === 'png';
       const out = document.createElement('canvas');
-      renderCanvas(out);
+      renderCanvas(out, false);
       const mime = isPng ? 'image/png' : 'image/jpeg';
       const filename = `vicecityiv_${state.mode}_${Date.now()}.${isPng ? 'png' : 'jpg'}`;
+      out.toBlob(blob => {
+        if (!blob) return;
+        if (preferShare) shareOrDownloadBlob(blob, filename);
+        else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+        }
+      }, mime, isPng ? 1.0 : 0.96);
+    };
+
+    window.exportReelsCover = function(fmt, preferShare) {
+      const isPng = fmt === 'png';
+      const out = document.createElement('canvas');
+      renderReelsCover(out);
+      const mime = isPng ? 'image/png' : 'image/jpeg';
+      const filename = `vicecityiv_${state.mode}_reels_kapak_1080x1920_${Date.now()}.${isPng ? 'png' : 'jpg'}`;
       out.toBlob(blob => {
         if (!blob) return;
         if (preferShare) shareOrDownloadBlob(blob, filename);
@@ -1508,6 +2075,7 @@
         else videoEl.muted = userMuted;
         box.classList.add('hidden'); mainBtn.disabled = false;
         document.getElementById('btn-v-play').textContent = 'Oynat';
+        renderCanvas();
         if (!recordCancelled && chunks.length > 0) {
           const isMp4 = (activeRecorder.mimeType || mime).includes('mp4');
           const outBlob = new Blob(chunks, { type: isMp4 ? 'video/mp4' : 'video/webm' });
@@ -1565,7 +2133,7 @@
         if (dir.includes('w')) { const nx = clamp(orig.x + dx, 0, orig.x + orig.w - minS); b.w = orig.x + orig.w - nx; b.x = nx; }
         if (dir.includes('n')) { const ny = clamp(orig.y + dy, 0, orig.y + orig.h - minS); b.h = orig.y + orig.h - ny; b.y = ny; }
       }
-      state[boxKey] = b; syncCropBoxes(); renderFacecamFrame();
+      state[boxKey] = b; syncCropBoxes(); renderCanvas();
     });
 
     window.addEventListener('pointerup', () => { dragState = null; });
@@ -1647,11 +2215,13 @@
       }
       if (alt !== null && q.has('alt')) { state.kapakSub = alt; document.getElementById('inp-k-sub').value = alt; }
       if (etiket) { state.kapakBoxTag = etiket; document.getElementById('inp-k-tag').value = etiket; }
+      if (q.get('spoiler') === '1' || q.get('spoiler') === 'true') state.spoilerOn = true;
+      if (q.get('reels') === '1' || q.get('reels') === 'true') state.previewReelsCover = true;
     }
 
     function previewLoop() {
       if (state.mode === 'facecam' && state.videoLoaded && !isRecording && !videoEl.paused && !videoEl.ended) {
-        renderFacecamFrame();
+        renderCanvas();
         if (videoEl.duration > 0) {
           document.getElementById('sld-v-seek').value = Math.round((videoEl.currentTime / videoEl.duration) * 1000);
           document.getElementById('lbl-v-time').textContent = fmtTime(videoEl.currentTime);
@@ -1692,6 +2262,12 @@
 
       document.getElementById('sld-ft-h').addEventListener('input', e => { state.footerH = parseInt(e.target.value, 10); document.getElementById('val-ft-h').textContent = e.target.value; renderCanvas(); });
       document.getElementById('sld-ft-pad').addEventListener('input', e => { state.footerPad = parseInt(e.target.value, 10); document.getElementById('val-ft-pad').textContent = e.target.value; renderCanvas(); });
+
+      document.getElementById('sel-sp-icon').addEventListener('change', e => { state.spoilerIcon = e.target.value; renderCanvas(); });
+      document.getElementById('sel-sp-pos').addEventListener('change', e => { state.spoilerPos = e.target.value; renderCanvas(); });
+      document.getElementById('inp-sp-text').addEventListener('input', e => { state.spoilerText = e.target.value; updateCaption(); renderCanvas(); });
+      document.getElementById('sld-sp-scale').addEventListener('input', e => { state.spoilerScale = parseInt(e.target.value, 10) / 100; document.getElementById('val-sp-scale').textContent = e.target.value; renderCanvas(); });
+      document.getElementById('sld-sp-dim').addEventListener('input', e => { state.spoilerDim = parseInt(e.target.value, 10) / 100; document.getElementById('val-sp-dim').textContent = e.target.value; renderCanvas(); });
 
       document.getElementById('sld-bg-op').addEventListener('input', e => { state.bgOpacity = parseInt(e.target.value, 10) / 100; renderCanvas(); });
       document.getElementById('sld-bg-zoom').addEventListener('input', e => { state.bgZoom = parseInt(e.target.value, 10) / 100; renderCanvas(); });
